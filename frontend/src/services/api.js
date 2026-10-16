@@ -50,6 +50,49 @@ class ApiService {
     this.initCategoryProgress();
   }
 
+  subscribe(listener) {
+    if (typeof listener === 'function') {
+      this.listeners.add(listener);
+    }
+    return () => {
+      if (typeof listener === 'function') {
+        this.listeners.delete(listener);
+      }
+    };
+  }
+
+  notifyListeners() {
+    this.listeners.forEach((fn) => {
+      try {
+        if (typeof fn === 'function') {
+          fn({
+            isOnline: this.isBackendOnline,
+            checked: this.connectionChecked
+          });
+        }
+      } catch (e) {
+        console.error('Error notifying listener', e);
+      }
+    });
+  }
+
+  async checkBackendHealth() {
+    try {
+      const res = await fetch(`${BASE_URL}/health`, {
+        method: 'GET',
+        signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' 
+          ? AbortSignal.timeout(1500) 
+          : undefined
+      });
+      this.isBackendOnline = res.ok;
+    } catch {
+      this.isBackendOnline = false;
+    } finally {
+      this.connectionChecked = true;
+      this.notifyListeners();
+    }
+  }
+
   // --- Per-Category Progress & Position Persistence ---
   initCategoryProgress() {
     if (typeof window === 'undefined') return {};
