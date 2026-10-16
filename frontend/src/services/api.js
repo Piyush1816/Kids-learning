@@ -12,9 +12,82 @@ import {
   BADGES_DATA,
   INITIAL_DAILY_CHALLENGES,
   ALL_LESSONS
-} from './mockData';
+} from './mockData.js';
 
 const BASE_URL = '/api';
+
+export function normalizeQuizQuestion(q) {
+  if (!q || typeof q !== 'object') return null;
+
+  const questionText = String(
+    q.questionText ||
+    q.question ||
+    q.text ||
+    q.prompt ||
+    q.title ||
+    q.statement ||
+    ''
+  ).trim();
+
+  const icon = String(
+    q.illustration ||
+    q.icon ||
+    q.emoji ||
+    q.image ||
+    ''
+  ).trim();
+
+  const category = String(
+    q.categoryId ||
+    q.category ||
+    'all'
+  ).trim();
+
+  const difficulty = String(
+    q.difficulty ||
+    'Easy'
+  ).trim();
+
+  const options = Array.isArray(q.options)
+    ? q.options.map((opt) => String(opt || '').trim()).filter((opt) => opt.length > 0)
+    : [];
+
+  let answerIndex = -1;
+  if (typeof q.correctAnswerIndex === 'number') {
+    answerIndex = q.correctAnswerIndex;
+  } else if (typeof q.answerIndex === 'number') {
+    answerIndex = q.answerIndex;
+  } else if (typeof q.correctIndex === 'number') {
+    answerIndex = q.correctIndex;
+  }
+
+  const explanation = String(q.explanation || q.desc || 'Great job answering!').trim();
+
+  if (!questionText) {
+    console.warn('[QuizValidation] Discarded question due to missing questionText:', q);
+    return null;
+  }
+  if (!options || options.length < 2) {
+    console.warn('[QuizValidation] Discarded question due to insufficient options:', q);
+    return null;
+  }
+  if (answerIndex < 0 || answerIndex >= options.length) {
+    console.warn('[QuizValidation] Discarded question due to out-of-bounds answerIndex:', q);
+    return null;
+  }
+
+  return {
+    id: String(q.id || `q-${Math.random().toString(36).substring(2, 9)}`),
+    category,
+    difficulty,
+    questionText,
+    icon,
+    options,
+    answerIndex,
+    explanation,
+    raw: q
+  };
+}
 
 class ApiService {
   constructor() {
@@ -26,21 +99,21 @@ class ApiService {
   }
 
   initLocalStorage() {
-    if (typeof window === 'undefined') return;
+    if (typeof localStorage === 'undefined') return;
 
-    if (!localStorage.getItem('ll_stars')) {
+    if (localStorage.getItem('ll_stars') === null) {
       localStorage.setItem('ll_stars', '24');
     }
-    if (!localStorage.getItem('ll_completed_lessons')) {
+    if (localStorage.getItem('ll_completed_lessons') === null) {
       localStorage.setItem('ll_completed_lessons', JSON.stringify(['alpha-a', 'alpha-b', 'num-1']));
     }
-    if (!localStorage.getItem('ll_badges')) {
+    if (localStorage.getItem('ll_badges') === null) {
       localStorage.setItem('ll_badges', JSON.stringify(BADGES_DATA));
     }
-    if (!localStorage.getItem('ll_challenges')) {
+    if (localStorage.getItem('ll_challenges') === null) {
       localStorage.setItem('ll_challenges', JSON.stringify(INITIAL_DAILY_CHALLENGES));
     }
-    if (!localStorage.getItem('ll_history')) {
+    if (localStorage.getItem('ll_history') === null) {
       localStorage.setItem('ll_history', JSON.stringify([
         'Learned letter A with Lumi',
         'Counted 5 stars on abacus',
@@ -95,7 +168,7 @@ class ApiService {
 
   // --- Per-Category Progress & Position Persistence ---
   initCategoryProgress() {
-    if (typeof window === 'undefined') return {};
+    if (typeof localStorage === 'undefined') return {};
     let existing = {};
     try {
       const raw = localStorage.getItem('ll_category_progress');
@@ -152,7 +225,7 @@ class ApiService {
   }
 
   getAllCategoryProgress() {
-    if (typeof window === 'undefined') return {};
+    if (typeof localStorage === 'undefined') return {};
     try {
       const raw = localStorage.getItem('ll_category_progress');
       if (raw) {
@@ -185,7 +258,7 @@ class ApiService {
   }
 
   saveCategoryPosition(categoryId, cardIndex, lessonId = null) {
-    if (typeof window === 'undefined' || !categoryId) return null;
+    if (typeof localStorage === 'undefined' || !categoryId) return null;
     const all = this.getAllCategoryProgress();
     const catLessons = ALL_LESSONS.filter((l) => l.categoryId === categoryId);
     const maxIdx = Math.max(0, catLessons.length - 1);
@@ -216,7 +289,7 @@ class ApiService {
   }
 
   resetCategoryReview(categoryId) {
-    if (typeof window === 'undefined' || !categoryId) return null;
+    if (typeof localStorage === 'undefined' || !categoryId) return null;
     const catLessons = ALL_LESSONS.filter((l) => l.categoryId === categoryId);
     return this.saveCategoryPosition(categoryId, 0, catLessons[0]?.id || null);
   }
@@ -310,19 +383,11 @@ class ApiService {
     return ALL_LESSONS;
   }
 
-  async getLessons(category) {
-    if (this.isBackendOnline) {
-      try {
-        const url = category && category !== 'all' ? `${BASE_URL}/lessons?category=${category}` : `${BASE_URL}/lessons`;
-        const res = await fetch(url);
-        if (res.ok) return await res.json();
-      } catch {
-        this.isBackendOnline = false;
-        this.notifyListeners();
-      }
-    }
+  getAllLessonsSync() {
+    return ALL_LESSONS;
+  }
 
-    // Offline category router with comprehensive 175 cards
+  getLessonsSync(category) {
     switch (category) {
       case 'alphabets': return ALPHABETS_DATA;
       case 'numbers': return NUMBERS_DATA;
@@ -336,23 +401,51 @@ class ApiService {
     }
   }
 
-  // --- Quizzes ---
-  async getQuizQuestions(category, difficulty = 'all') {
+  async getLessons(category) {
     if (this.isBackendOnline) {
       try {
-        const res = await fetch(`${BASE_URL}/quizzes?category=${category}&difficulty=${difficulty}`);
-        if (res.ok) return await res.json();
+        const url = category && category !== 'all' ? `${BASE_URL}/lessons?category=${category}` : `${BASE_URL}/lessons`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const remoteData = await res.json();
+          if (Array.isArray(remoteData)) return remoteData;
+        }
       } catch {
         this.isBackendOnline = false;
         this.notifyListeners();
       }
     }
-    // Filter local questions
-    return QUIZ_QUESTIONS.filter((q) => {
-      const catMatch = !category || category === 'all' || q.category === category;
-      const diffMatch = !difficulty || difficulty === 'all' || q.difficulty === difficulty;
-      return catMatch && diffMatch;
-    });
+
+    // Offline category router
+    return this.getLessonsSync(category);
+  }
+
+  // --- Quizzes ---
+  async getQuizQuestions(category, difficulty = 'all') {
+    let rawList = [];
+    if (this.isBackendOnline) {
+      try {
+        const res = await fetch(`${BASE_URL}/quizzes?category=${category}&difficulty=${difficulty}`);
+        if (res.ok) rawList = await res.json();
+      } catch {
+        this.isBackendOnline = false;
+        this.notifyListeners();
+      }
+    }
+
+    if (!rawList || !Array.isArray(rawList) || rawList.length === 0) {
+      // Filter local questions
+      rawList = QUIZ_QUESTIONS.filter((q) => {
+        const catMatch = !category || category === 'all' || q.category === category;
+        const diffMatch = !difficulty || difficulty === 'all' || q.difficulty === difficulty;
+        return catMatch && diffMatch;
+      });
+    }
+
+    // Normalize and filter out invalid/malformed questions
+    return rawList
+      .map(normalizeQuizQuestion)
+      .filter((q) => q !== null);
   }
 
   async submitQuiz(submission) {
@@ -375,17 +468,21 @@ class ApiService {
 
     // Local grading
     let correct = 0;
-    const total = Object.keys(submission.answers || {}).length;
+    const questionsList = Array.isArray(submission.questions) && submission.questions.length > 0
+      ? submission.questions
+      : QUIZ_QUESTIONS.map(normalizeQuizQuestion).filter(Boolean);
+
+    const total = questionsList.length || Object.keys(submission.answers || {}).length;
     const reviews = [];
 
-    QUIZ_QUESTIONS.forEach((q) => {
-      if (submission.answers && submission.answers[q.id] !== undefined) {
+    questionsList.forEach((q) => {
+      if (q && submission.answers && submission.answers[q.id] !== undefined) {
         const selected = submission.answers[q.id];
         const isRight = selected === q.answerIndex;
         if (isRight) correct++;
         reviews.push({
           questionId: q.id,
-          questionText: q.question,
+          questionText: q.questionText,
           selectedIndex: selected,
           correctIndex: q.answerIndex,
           isCorrect: isRight,
@@ -395,18 +492,20 @@ class ApiService {
     });
 
     const scorePct = total > 0 ? (correct / total) * 100 : 0;
-    const starsEarned = Math.round((scorePct / 100) * 5);
-
-    if (starsEarned > 0) {
-      this.addStars(starsEarned, `Completed ${submission.difficulty || 'Quiz'} adventure`);
-    }
+    const starsEarned = typeof submission.sessionStarsEarned === 'number' 
+      ? submission.sessionStarsEarned 
+      : correct * 2;
 
     return {
       totalQuestions: total,
       correctAnswers: correct,
       scorePercentage: Math.round(scorePct),
       starsEarned,
-      feedbackMessage: scorePct >= 80 ? 'Superstar! Lumi is doing a happy celebration dance!' : 'Great effort! Keep practicing, little explorer!',
+      feedbackMessage: scorePct >= 80 
+        ? 'Superstar! Lumi is doing a happy celebration dance!' 
+        : scorePct >= 50
+          ? 'Great job! You answered most questions correctly!'
+          : 'Good effort! Keep practicing, little explorer!',
       reviews,
       source: 'Client Offline Engine (Demo Mode)'
     };
@@ -455,6 +554,7 @@ class ApiService {
     if (changed) {
       localStorage.setItem('ll_badges', JSON.stringify(badges));
     }
+    this.notifyListeners();
   }
 
   markLessonComplete(lessonId, categoryId = null) {
@@ -520,8 +620,51 @@ class ApiService {
   }
 
   isLessonCompleted(lessonId) {
-    const completed = JSON.parse(localStorage.getItem('ll_completed_lessons') || '[]');
+    const completed = this.getCompletedLessons();
     return completed.includes(lessonId);
+  }
+
+  getCompletedLessons() {
+    if (typeof localStorage === 'undefined') return [];
+    try {
+      const raw = localStorage.getItem('ll_completed_lessons');
+      if (raw !== null) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.warn('[api.getCompletedLessons] Error reading ll_completed_lessons:', e);
+    }
+    return [];
+  }
+
+  saveCompletedLessons(completedList) {
+    if (typeof localStorage === 'undefined') return;
+    const safeList = Array.isArray(completedList) ? completedList : [];
+    try {
+      localStorage.setItem('ll_completed_lessons', JSON.stringify(safeList));
+    } catch (e) {
+      console.error('[api.saveCompletedLessons] Error saving:', e);
+    }
+    this.initCategoryProgress();
+    this.notifyListeners();
+  }
+
+  getCategoryPosition(categoryId) {
+    if (!categoryId) return 0;
+    const catProg = this.getCategoryProgress(categoryId);
+    if (catProg && typeof catProg.lastVisitedIndex === 'number') {
+      return catProg.lastVisitedIndex;
+    }
+    return 0;
+  }
+
+  saveProfile(profileData) {
+    if (typeof localStorage === 'undefined' || !profileData) return;
+    if (typeof profileData.totalStars === 'number' && !isNaN(profileData.totalStars)) {
+      localStorage.setItem('ll_stars', String(profileData.totalStars));
+    }
+    this.notifyListeners();
   }
 
   // --- Challenges Queue (FIFO) ---
@@ -549,16 +692,30 @@ class ApiService {
 
   // --- Badges & Leaderboard ---
   getBadges() {
-    return JSON.parse(localStorage.getItem('ll_badges') || JSON.stringify(BADGES_DATA));
+    try {
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        const raw = localStorage.getItem('ll_badges');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('[api.getBadges] Error reading ll_badges from localStorage:', e);
+    }
+    return Array.isArray(BADGES_DATA) ? BADGES_DATA : [];
   }
 
   async getLeaderboard() {
+    let list = [];
     if (this.isBackendOnline) {
       try {
         const res = await fetch(`${BASE_URL}/leaderboard`);
         if (res.ok) {
-          const list = await res.json();
-          return list.map((item) => ({ ...item, source: 'Spring Boot (Java 21 Backend)' }));
+          const raw = await res.json();
+          if (Array.isArray(raw)) {
+            list = raw.map((item) => ({ ...item, source: 'Spring Boot (Java 21 Backend)' }));
+          }
         }
       } catch {
         this.isBackendOnline = false;
@@ -566,22 +723,33 @@ class ApiService {
       }
     }
 
-    const myStars = parseInt(localStorage.getItem('ll_stars') || '24', 10);
-    const list = [
-      { id: '1', name: 'Oliver Owl', avatar: '🦉', stars: 95, badges: 7 },
-      { id: '2', name: 'Maya Star', avatar: '🦄', stars: 85, badges: 6 },
-      { id: '3', name: 'Leo Lion', avatar: '🦁', stars: 64, badges: 5 },
-      { id: '4', name: 'Little Explorer (You)', avatar: '🦊', stars: myStars, badges: 3 },
-      { id: '5', name: 'Sammy Swift', avatar: '🚀', stars: 52, badges: 4 },
-      { id: '6', name: 'Penny Penguin', avatar: '🐧', stars: 44, badges: 3 },
-      { id: '7', name: 'Ella Elephant', avatar: '🐘', stars: 38, badges: 2 }
-    ];
-    // Merge Sort simulation
-    return list.sort((a, b) => b.stars - a.stars).map((item, idx) => ({ 
-      ...item, 
-      rank: idx + 1,
-      source: 'Client MergeSort Engine (Demo Mode)' 
-    }));
+    if (!list || !Array.isArray(list) || list.length === 0) {
+      let myStars = 24;
+      try {
+        myStars = parseInt(localStorage.getItem('ll_stars') || '24', 10);
+        if (isNaN(myStars)) myStars = 24;
+      } catch {
+        myStars = 24;
+      }
+
+      const demoList = [
+        { id: '1', name: 'Oliver Owl', avatar: '🦉', stars: 95, badges: 7 },
+        { id: '2', name: 'Maya Star', avatar: '🦄', stars: 85, badges: 6 },
+        { id: '3', name: 'Leo Lion', avatar: '🦁', stars: 64, badges: 5 },
+        { id: '4', name: 'Little Explorer (You)', avatar: '🦊', stars: myStars, badges: 3 },
+        { id: '5', name: 'Sammy Swift', avatar: '🚀', stars: 52, badges: 4 },
+        { id: '6', name: 'Penny Penguin', avatar: '🐧', stars: 44, badges: 3 },
+        { id: '7', name: 'Ella Elephant', avatar: '🐘', stars: 38, badges: 2 }
+      ];
+
+      list = demoList.sort((a, b) => b.stars - a.stars).map((item, idx) => ({ 
+        ...item, 
+        rank: idx + 1,
+        source: 'Client MergeSort Engine (Demo Mode)' 
+      }));
+    }
+
+    return Array.isArray(list) ? list : [];
   }
 
   // --- Real Java Backend DSA Benchmarks ---
@@ -806,14 +974,15 @@ class ApiService {
   }
 
   resetAllDemoData() {
-    if (typeof window === 'undefined') return;
-    localStorage.removeItem('ll_stars');
-    localStorage.removeItem('ll_completed_lessons');
-    localStorage.removeItem('ll_badges');
-    localStorage.removeItem('ll_challenges');
-    localStorage.removeItem('ll_history');
-    localStorage.removeItem('ll_category_progress');
-    this.initLocalStorage();
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem('ll_stars', '24');
+    localStorage.setItem('ll_completed_lessons', JSON.stringify([]));
+    localStorage.setItem('ll_badges', JSON.stringify(BADGES_DATA.map((b) => ({ ...b, unlocked: false }))));
+    localStorage.setItem('ll_challenges', JSON.stringify(INITIAL_DAILY_CHALLENGES));
+    localStorage.setItem('ll_history', JSON.stringify([]));
+    localStorage.setItem('ll_category_progress', JSON.stringify({}));
+    this.initCategoryProgress();
+    this.notifyListeners();
   }
 }
 

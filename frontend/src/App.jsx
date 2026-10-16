@@ -9,20 +9,57 @@ import RewardsRoom from './pages/RewardsRoom';
 import CreativeCorner from './pages/CreativeCorner';
 import ParentCorner from './pages/ParentCorner';
 import Settings from './pages/Settings';
-import DsaLab from './pages/DsaLab';
 import { api } from './services/api';
+import { sound } from './services/audioService';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState('landing');
   const [stars, setStars] = useState(24);
   const [badgesCount, setBadgesCount] = useState(3);
   const [activeLearnCategory, setActiveLearnCategory] = useState('alphabets');
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('ll_dark_mode');
+      if (saved !== null) return saved === 'true';
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+  });
 
   useEffect(() => {
-    const profile = api.getProfile();
-    setStars(profile.totalStars);
-    setBadgesCount(profile.badgesEarned);
+    const syncProfile = () => {
+      const profile = api.getProfile();
+      setStars(profile.totalStars);
+      setBadgesCount(profile.badgesEarned);
+    };
+    syncProfile();
+    const unsub = api.subscribe(() => {
+      syncProfile();
+    });
+    return unsub;
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const root = document.documentElement;
+      if (darkMode) {
+        root.classList.add('dark');
+        localStorage.setItem('ll_dark_mode', 'true');
+      } else {
+        root.classList.remove('dark');
+        localStorage.setItem('ll_dark_mode', 'false');
+      }
+    }
+  }, [darkMode]);
+
+  const toggleDarkMode = () => {
+    try {
+      sound.playPop();
+    } catch (e) {
+      // ignore
+    }
+    setDarkMode((prev) => !prev);
+  };
 
   const navigateToLearnCategory = (catId) => {
     setActiveLearnCategory(catId);
@@ -30,7 +67,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-sky-50 via-white to-amber-50/30 text-slate-800">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-sky-50 via-white to-amber-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-300">
       
       {/* Top Child-Friendly Navbar */}
       <Navbar 
@@ -38,6 +75,8 @@ export default function App() {
         setTab={setCurrentTab} 
         stars={stars} 
         badgesCount={badgesCount} 
+        darkMode={darkMode}
+        toggleDarkMode={toggleDarkMode}
       />
 
       {/* Main Content Area */}
@@ -69,27 +108,17 @@ export default function App() {
         {currentTab === 'rewards' && <RewardsRoom stars={stars} />}
         {currentTab === 'draw' && <CreativeCorner />}
         {currentTab === 'parents' && <ParentCorner stars={stars} onSelectCategory={navigateToLearnCategory} />}
-        {currentTab === 'dsa' && <DsaLab />}
-        {currentTab === 'settings' && <Settings setStars={setStars} />}
+        {currentTab === 'settings' && <Settings setStars={setStars} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />}
       </main>
 
       {/* Playful Educational Footer */}
-      <footer className="border-t-2 border-slate-100 bg-white/80 backdrop-blur-sm py-6 text-center text-xs font-medium text-slate-500">
+      <footer className="border-t-2 border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm py-6 text-center text-xs font-medium text-slate-500 dark:text-slate-400">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span>🦊</span>
-            <span className="font-display font-bold text-slate-700">Little Learners — Explore, Play &amp; Grow</span>
+            <span className="font-display font-bold text-slate-700 dark:text-slate-300">Little Learners — Explore, Play &amp; Grow</span>
           </div>
           <div className="flex items-center gap-4 text-slate-400">
-            <span>College DSA in Java 21 Project</span>
-            <span>•</span>
-            <button 
-              onClick={() => setCurrentTab('dsa')}
-              className="text-indigo-600 font-bold hover:underline"
-            >
-              DSA Visualizer Lab
-            </button>
-            <span>•</span>
             <span>Child-Safe &amp; Ad-Free</span>
           </div>
         </div>

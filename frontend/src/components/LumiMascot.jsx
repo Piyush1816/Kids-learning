@@ -77,15 +77,15 @@ export default function LumiMascot({ message = "Hi friend! I'm Lumi! Let's learn
 
       {/* Lumi's Speech Bubble */}
       {message && (
-        <div className="relative bg-white border-2 border-amber-200 text-slate-800 rounded-2xl px-4 py-2.5 shadow-sm max-w-xs sm:max-w-md animate-fade-in">
+        <div className="relative bg-white dark:bg-slate-800 border-2 border-amber-200 dark:border-amber-700 text-slate-800 dark:text-slate-100 rounded-2xl px-4 py-2.5 shadow-sm max-w-xs sm:max-w-md animate-fade-in">
           {/* Bubble pointer */}
-          <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-0 h-0 border-t-8 border-t-transparent border-b-8 border-b-transparent border-r-8 border-r-white z-10" />
-          <div className="absolute -left-[11px] top-1/2 -translate-y-1/2 w-0 h-0 border-t-[9px] border-t-transparent border-b-[9px] border-b-transparent border-r-[9px] border-r-amber-200" />
+          <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-0 h-0 border-t-8 border-t-transparent border-b-8 border-b-transparent border-r-8 border-r-white dark:border-r-slate-800 z-10" />
+          <div className="absolute -left-[11px] top-1/2 -translate-y-1/2 w-0 h-0 border-t-[9px] border-t-transparent border-b-[9px] border-b-transparent border-r-[9px] border-r-amber-200 dark:border-r-amber-700" />
           
-          <div className="flex items-center gap-1.5 font-bold text-xs text-amber-600 mb-0.5">
+          <div className="flex items-center gap-1.5 font-bold text-xs text-amber-600 dark:text-amber-400 mb-0.5">
             <span>🦊 Lumi says:</span>
           </div>
-          <p className="text-sm font-medium text-slate-700 leading-snug">
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-200 leading-snug">
             {message}
           </p>
         </div>

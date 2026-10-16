@@ -2,13 +2,11 @@ import React, { useRef, useState, useEffect } from 'react';
 import { sound } from '../services/audioService';
 import LumiMascot from '../components/LumiMascot';
 import { 
-  Palette, 
   RotateCcw, 
   RotateCw, 
   Trash2, 
   Download, 
   Eraser, 
-  Sparkles,
   Shuffle
 } from 'lucide-react';
 
@@ -19,7 +17,7 @@ export default function CreativeCorner() {
   const [brushSize, setBrushSize] = useState(6);
   const [isEraser, setIsEraser] = useState(false);
 
-  // DSA: LIFO Stacks for Undo and Redo operations
+  // LIFO Stacks for Undo and Redo operations
   const [undoStack, setUndoStack] = useState([]);
   const [redoStack, setRedoStack] = useState([]);
 
@@ -54,7 +52,6 @@ export default function CreativeCorner() {
     ctx.lineJoin = 'round';
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    // Push initial blank state onto Undo Stack
     saveStateToStack();
   }, []);
 
@@ -63,7 +60,7 @@ export default function CreativeCorner() {
     if (!canvas) return;
     const snapshot = canvas.toDataURL();
     setUndoStack((prev) => [...prev, snapshot]);
-    setRedoStack([]); // Clear redo stack on new stroke
+    setRedoStack([]);
   };
 
   const getCoordinates = (e) => {
@@ -102,21 +99,20 @@ export default function CreativeCorner() {
   const stopDrawing = () => {
     if (isDrawing) {
       setIsDrawing(false);
-      saveStateToStack(); // Push onto LIFO Stack
+      saveStateToStack();
     }
   };
 
-  // DSA: Pop from Undo Stack, push onto Redo Stack!
   const handleUndo = () => {
     if (undoStack.length <= 1) return;
-    sound.playPop();
+    try { sound.playPop(); } catch (e) {}
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
 
     const newUndo = [...undoStack];
-    const currentState = newUndo.pop(); // Pop top of undo stack
-    setRedoStack((prev) => [...prev, currentState]); // Push onto redo stack
+    const currentState = newUndo.pop();
+    setRedoStack((prev) => [...prev, currentState]);
     setUndoStack(newUndo);
 
     const prevState = newUndo[newUndo.length - 1];
@@ -128,16 +124,15 @@ export default function CreativeCorner() {
     };
   };
 
-  // DSA: Pop from Redo Stack, push back onto Undo Stack!
   const handleRedo = () => {
     if (redoStack.length === 0) return;
-    sound.playPop();
+    try { sound.playPop(); } catch (e) {}
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
 
     const newRedo = [...redoStack];
-    const restoredState = newRedo.pop(); // Pop top of redo stack
+    const restoredState = newRedo.pop();
     setUndoStack((prev) => [...prev, restoredState]);
     setRedoStack(newRedo);
 
@@ -150,7 +145,7 @@ export default function CreativeCorner() {
   };
 
   const handleClear = () => {
-    sound.playPop();
+    try { sound.playPop(); } catch (e) {}
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#FFFFFF';
@@ -159,7 +154,7 @@ export default function CreativeCorner() {
   };
 
   const handleDownload = () => {
-    sound.playSuccess();
+    try { sound.playSuccess(); } catch (e) {}
     const canvas = canvasRef.current;
     const link = document.createElement('a');
     link.download = 'little-learners-masterpiece.png';
@@ -168,21 +163,21 @@ export default function CreativeCorner() {
   };
 
   const handleNewPrompt = () => {
-    sound.playPop();
+    try { sound.playPop(); } catch (e) {}
     const next = prompts[(prompts.indexOf(currentPrompt) + 1) % prompts.length];
     setCurrentPrompt(next);
   };
 
   return (
-    <div className="space-y-6 py-4">
+    <div className="space-y-6 py-4 text-slate-800 dark:text-slate-100">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
-          <h1 className="font-display font-bold text-3xl text-slate-800 flex items-center gap-2">
+          <h1 className="font-display font-bold text-3xl text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <span>Creative Corner</span>
             <span className="text-2xl">🎨</span>
           </h1>
-          <p className="text-slate-500 font-medium text-sm">
+          <p className="text-slate-500 dark:text-slate-400 font-medium text-sm">
             Draw, doodle, and paint your favorite ideas with full Undo and Redo!
           </p>
         </div>
@@ -193,21 +188,21 @@ export default function CreativeCorner() {
       </div>
 
       {/* Drawing Prompt Card */}
-      <div className="card-soft p-4 bg-gradient-to-r from-amber-50 to-pink-50 border-amber-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="card-soft p-4 bg-gradient-to-r from-amber-50 to-pink-50 dark:from-amber-950/40 dark:to-pink-950/40 border-amber-200 dark:border-amber-800 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <span className="text-3xl">✨</span>
           <div>
-            <span className="text-xs font-bold text-amber-700 uppercase tracking-wider block">
+            <span className="text-xs font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider block">
               Today's Drawing Prompt:
             </span>
-            <p className="font-display font-bold text-base text-slate-800">
+            <p className="font-display font-bold text-base text-slate-800 dark:text-slate-100">
               "{currentPrompt}"
             </p>
           </div>
         </div>
         <button
           onClick={handleNewPrompt}
-          className="btn-bubbly flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-white border border-amber-300 text-amber-800 text-xs font-bold shadow-sm shrink-0 hover:bg-amber-100"
+          className="btn-bubbly flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300 text-xs font-bold shadow-sm shrink-0 hover:bg-amber-100 dark:hover:bg-slate-700"
         >
           <Shuffle className="w-3.5 h-3.5" />
           <span>New Prompt</span>
@@ -215,10 +210,10 @@ export default function CreativeCorner() {
       </div>
 
       {/* Canvas & Controls Container */}
-      <div className="card-soft p-4 sm:p-6 bg-white border-2 border-slate-200 space-y-4 shadow-lg">
+      <div className="card-soft p-4 sm:p-6 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 space-y-4 shadow-lg">
         
         {/* Top Control Bar: Colors, Brush, Undo/Redo */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pb-3 border-b border-slate-100">
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-3 border-b border-slate-100 dark:border-slate-700">
           
           {/* Color Palette */}
           <div className="flex items-center gap-2 flex-wrap">
@@ -226,13 +221,13 @@ export default function CreativeCorner() {
               <button
                 key={c.name}
                 onClick={() => {
-                  sound.playPop();
+                  try { sound.playPop(); } catch (e) {}
                   setSelectedColor(c.hex);
                   setIsEraser(false);
                 }}
                 className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full shadow-sm transition-transform ${
                   selectedColor === c.hex && !isEraser
-                    ? 'scale-125 ring-2 ring-offset-2 ring-slate-800'
+                    ? 'scale-125 ring-2 ring-offset-2 ring-amber-400 dark:ring-amber-300'
                     : 'hover:scale-110'
                 }`}
                 style={{ backgroundColor: c.hex }}
@@ -242,11 +237,11 @@ export default function CreativeCorner() {
 
             {/* Eraser */}
             <button
-              onClick={() => { sound.playPop(); setIsEraser(!isEraser); }}
+              onClick={() => { try { sound.playPop(); } catch (e) {} setIsEraser(!isEraser); }}
               className={`p-2 rounded-xl text-xs font-bold flex items-center gap-1 border-2 transition-all ${
                 isEraser
-                  ? 'bg-amber-100 border-amber-400 text-amber-900 scale-105'
-                  : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200'
+                  ? 'bg-amber-100 dark:bg-amber-900/60 border-amber-400 dark:border-amber-600 text-amber-900 dark:text-amber-200 scale-105'
+                  : 'bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
               }`}
               title="Eraser tool"
             >
@@ -256,13 +251,13 @@ export default function CreativeCorner() {
           </div>
 
           {/* Brush Sizes */}
-          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-2xl">
+          <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900 p-1 rounded-2xl">
             {[3, 6, 12, 20].map((size) => (
               <button
                 key={size}
-                onClick={() => { sound.playPop(); setBrushSize(size); }}
+                onClick={() => { try { sound.playPop(); } catch (e) {} setBrushSize(size); }}
                 className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
-                  brushSize === size ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'
+                  brushSize === size ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400'
                 }`}
               >
                 {size === 3 ? 'Thin' : size === 6 ? 'Normal' : size === 12 ? 'Thick' : 'Jumbo'}
@@ -273,22 +268,22 @@ export default function CreativeCorner() {
           {/* Action Tools: Undo, Redo, Clear, Save */}
           <div className="flex items-center gap-2">
             
-            {/* Undo (DSA Stack Pop) */}
+            {/* Undo */}
             <button
               onClick={handleUndo}
               disabled={undoStack.length <= 1}
-              className="btn-bubbly p-2 rounded-xl bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-700 font-bold text-xs flex items-center gap-1"
-              title="Undo previous stroke (Stack Pop)"
+              className="btn-bubbly p-2 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-40 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-1"
+              title="Undo previous stroke"
             >
               <RotateCcw className="w-4 h-4" />
               <span className="hidden sm:inline">Undo</span>
             </button>
 
-            {/* Redo (DSA Stack Push) */}
+            {/* Redo */}
             <button
               onClick={handleRedo}
               disabled={redoStack.length === 0}
-              className="btn-bubbly p-2 rounded-xl bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-700 font-bold text-xs flex items-center gap-1"
+              className="btn-bubbly p-2 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-40 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-1"
               title="Redo stroke"
             >
               <RotateCw className="w-4 h-4" />
@@ -298,7 +293,7 @@ export default function CreativeCorner() {
             {/* Clear Canvas */}
             <button
               onClick={handleClear}
-              className="btn-bubbly p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center gap-1"
+              className="btn-bubbly p-2 rounded-xl bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900 text-rose-700 dark:text-rose-300 font-bold text-xs flex items-center gap-1 border border-rose-200 dark:border-rose-800"
               title="Clear canvas"
             >
               <Trash2 className="w-4 h-4" />
@@ -320,7 +315,7 @@ export default function CreativeCorner() {
         </div>
 
         {/* HTML5 Canvas Element */}
-        <div className="w-full flex justify-center bg-slate-50 rounded-2xl p-2 border border-slate-200 overflow-hidden">
+        <div className="w-full flex justify-center bg-slate-50 dark:bg-slate-900 rounded-2xl p-2 border border-slate-200 dark:border-slate-700 overflow-hidden">
           <canvas
             ref={canvasRef}
             width={800}
@@ -335,10 +330,6 @@ export default function CreativeCorner() {
             className="bg-white rounded-xl shadow-inner cursor-crosshair touch-none max-w-full h-auto"
           />
         </div>
-
-        <p className="text-center text-xs font-mono font-bold text-slate-400">
-          💡 DSA Feature in action: Undo/Redo is powered by dual LIFO Stacks! (Depth: {undoStack.length} states)
-        </p>
 
       </div>
     </div>

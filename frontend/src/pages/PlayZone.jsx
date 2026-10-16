@@ -202,158 +202,149 @@ export default function PlayZone({ stars, setStars }) {
     setBlitzRound(0);
     setBlitzCompleted(false);
     setBlitzFeedback(null);
-    setBlitzLock(false);
     setBlitzTimeLeft(10);
     setBlitzActive(true);
+    setBlitzLock(false);
   };
 
-  const nextGameSequence = () => {
-    const list = ['memory-cards', 'animal-match', 'silhouette-guess', 'category-sort', 'counting-safari', 'color-shape-blitz'];
-    const curIdx = list.indexOf(activeGame);
-    const nextGame = list[(curIdx + 1) % list.length];
-    setActiveGame(nextGame);
+  // Helper to add stars
+  const addEarnedStars = (amount) => {
+    const updated = stars + amount;
+    setStars(updated);
+    api.saveProfile({ totalStars: updated });
+    setTriggerConfetti(true);
+    setTimeout(() => setTriggerConfetti(false), 2000);
   };
 
-  const handleCardClick = (idx) => {
-    if (isMemoryEvaluating || flippedIndices.length === 2 || flippedIndices.includes(idx) || matchedPairs.includes(idx)) {
-      return; // Locked against race conditions
+  // Memory Matrix Card Handler
+  const handleCardClick = (index) => {
+    if (
+      isMemoryEvaluating ||
+      flippedIndices.includes(index) ||
+      matchedPairs.includes(index) ||
+      flippedIndices.length >= 2
+    ) {
+      return;
     }
 
     sound.playPop();
-    const newFlipped = [...flippedIndices, idx];
+    const newFlipped = [...flippedIndices, index];
     setFlippedIndices(newFlipped);
 
     if (newFlipped.length === 2) {
-      setMoves(moves + 1);
+      setMoves((m) => m + 1);
       setIsMemoryEvaluating(true);
-      const [firstIdx, secondIdx] = newFlipped;
 
+      const [firstIdx, secondIdx] = newFlipped;
       if (memoryDeck[firstIdx].icon === memoryDeck[secondIdx].icon) {
         sound.playSuccess();
         const newMatched = [...matchedPairs, firstIdx, secondIdx];
         setMatchedPairs(newMatched);
         setFlippedIndices([]);
         setIsMemoryEvaluating(false);
-        setScore((prev) => prev + 15);
 
         if (newMatched.length === memoryDeck.length) {
-          setTriggerConfetti(true);
-          sound.playFanfare();
-          api.addStars(4, 'Solved Memory Matrix game');
-          setStars(parseInt(localStorage.getItem('ll_stars') || '24', 10));
           setMemoryCompleted(true);
-          setTimeout(() => setTriggerConfetti(false), 2000);
+          addEarnedStars(4);
         }
       } else {
-        sound.playGentleOops();
         setTimeout(() => {
           setFlippedIndices([]);
           setIsMemoryEvaluating(false);
-        }, 900);
+        }, 800);
       }
     }
   };
 
-  // Animal Match handler
+  // Animal Game Option Picker
   const handleAnimalPick = (idx) => {
     if (animalLock || animalCompleted) return;
     setAnimalLock(true);
-    const current = animalQuestions[animalRound];
 
-    if (idx === current.correctIdx) {
+    const q = animalQuestions[animalRound];
+    if (idx === q.correctIdx) {
       sound.playSuccess();
       setAnimalFeedback('correct');
-      setScore((prev) => prev + 10);
+
       setTimeout(() => {
         setAnimalFeedback(null);
         setAnimalLock(false);
+
         if (animalRound < animalQuestions.length - 1) {
-          setAnimalRound(animalRound + 1);
+          setAnimalRound((r) => r + 1);
         } else {
-          setTriggerConfetti(true);
-          sound.playFanfare();
-          api.addStars(3, 'Completed Animal Matcher game');
-          setStars(parseInt(localStorage.getItem('ll_stars') || '24', 10));
           setAnimalCompleted(true);
-          setTimeout(() => setTriggerConfetti(false), 2000);
+          addEarnedStars(3);
         }
       }, 1000);
     } else {
       sound.playGentleOops();
-      setAnimalFeedback('incorrect');
+      setAnimalFeedback('wrong');
       setTimeout(() => {
         setAnimalFeedback(null);
         setAnimalLock(false);
-      }, 900);
+      }, 800);
     }
   };
 
-  // Silhouette Guess handler
-  const handleMysteryPick = (selected) => {
+  // Mystery Silhouette Option Picker
+  const handleMysteryPick = (optionName) => {
     if (mysteryLock || mysteryCompleted) return;
     setMysteryLock(true);
-    const current = mysteryItems[mysteryRound];
-    setMysteryRevealed(true);
 
-    if (selected === current.answer) {
+    const item = mysteryItems[mysteryRound];
+    if (optionName === item.answer) {
       sound.playSuccess();
+      setMysteryRevealed(true);
       setMysteryFeedback('correct');
-      setScore((prev) => prev + 15);
+
       setTimeout(() => {
         setMysteryFeedback(null);
         setMysteryRevealed(false);
         setMysteryLock(false);
+
         if (mysteryRound < mysteryItems.length - 1) {
-          setMysteryRound(mysteryRound + 1);
+          setMysteryRound((r) => r + 1);
         } else {
-          setTriggerConfetti(true);
-          sound.playFanfare();
-          api.addStars(3, 'Completed Mystery Shadow game');
-          setStars(parseInt(localStorage.getItem('ll_stars') || '24', 10));
           setMysteryCompleted(true);
-          setTimeout(() => setTriggerConfetti(false), 2000);
+          addEarnedStars(3);
         }
-      }, 1400);
+      }, 1200);
     } else {
       sound.playGentleOops();
-      setMysteryFeedback('incorrect');
+      setMysteryFeedback('wrong');
       setTimeout(() => {
         setMysteryFeedback(null);
-        setMysteryRevealed(false);
         setMysteryLock(false);
-      }, 1000);
+      }, 800);
     }
   };
 
-  // Category Sorter handler
-  const handleSortItem = (basket) => {
+  // Category Sorter Handler
+  const handleSortItem = (targetBasket) => {
     if (sortLock || sortCompleted) return;
     setSortLock(true);
-    const current = sortItems[sortIndex];
 
-    if (basket === current.basket) {
+    const item = sortItems[sortIndex];
+    if (targetBasket === item.basket) {
       sound.playSuccess();
       setSortFeedback('correct');
-      setSortedCount((prev) => prev + 1);
-      setScore((prev) => prev + 10);
+      setSortedCount((s) => s + 1);
 
       setTimeout(() => {
         setSortFeedback(null);
         setSortLock(false);
+
         if (sortIndex < sortItems.length - 1) {
-          setSortIndex(sortIndex + 1);
+          setSortIndex((i) => i + 1);
         } else {
-          setTriggerConfetti(true);
-          sound.playFanfare();
-          api.addStars(3, 'Completed Basket Sorter game');
-          setStars(parseInt(localStorage.getItem('ll_stars') || '24', 10));
           setSortCompleted(true);
-          setTimeout(() => setTriggerConfetti(false), 2000);
+          addEarnedStars(3);
         }
-      }, 800);
+      }, 900);
     } else {
       sound.playGentleOops();
-      setSortFeedback('incorrect');
+      setSortFeedback('wrong');
       setTimeout(() => {
         setSortFeedback(null);
         setSortLock(false);
@@ -361,33 +352,30 @@ export default function PlayZone({ stars, setStars }) {
     }
   };
 
-  // Safari Counting handler
-  const handleSafariPick = (picked) => {
+  // Counting Safari Handler
+  const handleSafariPick = (chosenNum) => {
     if (safariLock || safariCompleted) return;
     setSafariLock(true);
-    const current = safariItems[safariRound];
 
-    if (picked === current.count) {
+    const q = safariItems[safariRound];
+    if (chosenNum === q.count) {
       sound.playSuccess();
       setSafariFeedback('correct');
-      setScore((prev) => prev + 10);
+
       setTimeout(() => {
         setSafariFeedback(null);
         setSafariLock(false);
+
         if (safariRound < safariItems.length - 1) {
-          setSafariRound(safariRound + 1);
+          setSafariRound((r) => r + 1);
         } else {
-          setTriggerConfetti(true);
-          sound.playFanfare();
-          api.addStars(3, 'Completed Counting Safari game');
-          setStars(parseInt(localStorage.getItem('ll_stars') || '24', 10));
           setSafariCompleted(true);
-          setTimeout(() => setTriggerConfetti(false), 2000);
+          addEarnedStars(3);
         }
       }, 1000);
     } else {
       sound.playGentleOops();
-      setSafariFeedback('incorrect');
+      setSafariFeedback('wrong');
       setTimeout(() => {
         setSafariFeedback(null);
         setSafariLock(false);
@@ -395,34 +383,30 @@ export default function PlayZone({ stars, setStars }) {
     }
   };
 
-  // Blitz handler
+  // Color & Shape Blitz Handler
   const handleBlitzPick = (isCorrect) => {
-    if (!blitzActive || blitzLock || blitzCompleted) return;
+    if (blitzLock || blitzCompleted) return;
     setBlitzLock(true);
+
     if (isCorrect) {
       sound.playSuccess();
       setBlitzFeedback('correct');
-      const bonus = blitzTimeLeft * 2;
-      setScore((prev) => prev + 15 + bonus);
 
       setTimeout(() => {
         setBlitzFeedback(null);
         setBlitzLock(false);
-        setBlitzTimeLeft(10);
+
         if (blitzRound < blitzItems.length - 1) {
-          setBlitzRound(blitzRound + 1);
+          setBlitzRound((r) => r + 1);
+          setBlitzTimeLeft(10);
         } else {
-          setTriggerConfetti(true);
-          sound.playFanfare();
-          api.addStars(4, 'Completed Color & Shape Blitz');
-          setStars(parseInt(localStorage.getItem('ll_stars') || '24', 10));
           setBlitzCompleted(true);
-          setTimeout(() => setTriggerConfetti(false), 2000);
+          addEarnedStars(4);
         }
-      }, 1000);
+      }, 800);
     } else {
       sound.playGentleOops();
-      setBlitzFeedback('incorrect');
+      setBlitzFeedback('wrong');
       setTimeout(() => {
         setBlitzFeedback(null);
         setBlitzLock(false);
@@ -430,55 +414,65 @@ export default function PlayZone({ stars, setStars }) {
     }
   };
 
-  const games = [
-    { id: 'memory-cards', name: 'Memory Matrix', icon: '🃏' },
-    { id: 'animal-match', name: 'Animal Match', icon: '🦁' },
-    { id: 'silhouette-guess', name: 'Shadow Riddle', icon: '🔍' },
-    { id: 'category-sort', name: 'Basket Sorter', icon: '🧺' },
-    { id: 'counting-safari', name: 'Counting Safari', icon: '🧮' },
-    { id: 'color-shape-blitz', name: 'Lightning Blitz', icon: '⚡' }
+  // Games Sequence Array
+  const gamesList = [
+    { id: 'memory-cards', name: 'Memory Matrix', icon: '🃏', color: 'border-amber-400 text-amber-900 dark:text-amber-300' },
+    { id: 'animal-match', name: 'Animal Match', icon: '🦁', color: 'border-pink-400 text-pink-900 dark:text-pink-300' },
+    { id: 'silhouette-guess', name: 'Shadow Riddle', icon: '🔍', color: 'border-purple-400 text-purple-900 dark:text-purple-300' },
+    { id: 'category-sort', name: 'Basket Sorter', icon: '🧺', color: 'border-emerald-400 text-emerald-900 dark:text-emerald-300' },
+    { id: 'counting-safari', name: 'Counting Safari', icon: '🧮', color: 'border-sky-400 text-sky-900 dark:text-sky-300' },
+    { id: 'color-shape-blitz', name: 'Speed Blitz', icon: '⚡', color: 'border-orange-400 text-orange-900 dark:text-orange-300' }
   ];
 
+  const nextGameSequence = () => {
+    const curIdx = gamesList.findIndex((g) => g.id === activeGame);
+    const nextIdx = (curIdx + 1) % gamesList.length;
+    setActiveGame(gamesList[nextIdx].id);
+  };
+
   return (
-    <div className="space-y-6 py-4">
+    <div className="space-y-6 pt-4 sm:pt-6 animate-fade-in pb-12">
+      
       <ConfettiCanvas trigger={triggerConfetti} />
 
-      {/* Play Zone Header & Score Vault */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div>
-          <h1 className="font-display font-bold text-2xl sm:text-3xl text-slate-800 flex items-center gap-2">
-            <span>Play Zone Adventure</span>
-            <span className="text-2xl">🎮</span>
-          </h1>
-          <p className="text-slate-500 font-medium text-xs sm:text-sm">
-            6 fully functional educational games with real scoring, sounds, and replay!
+      {/* Header Banner & Mascot */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 card-soft p-5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="font-display font-extrabold text-2xl sm:text-3xl text-slate-800 dark:text-slate-100">
+              Play Zone &amp; Skill Arcade
+            </h1>
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 dark:bg-purple-950 text-purple-900 dark:text-purple-300 border border-purple-200 dark:border-purple-800 flex items-center gap-1">
+              <Gamepad2 className="w-3.5 h-3.5" />
+              <span>6 Interactive Games</span>
+            </span>
+          </div>
+          <p className="text-slate-500 dark:text-slate-400 font-medium text-xs sm:text-sm">
+            Interactive puzzles and skill mini-games designed to strengthen memory, counting, logic, and motor skills!
           </p>
         </div>
-
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-amber-100 text-amber-950 font-display font-bold text-xs sm:text-sm shadow-sm border border-amber-300">
-            <Trophy className="w-4 h-4 text-amber-600" />
-            <span>Score: {score} pts</span>
-          </div>
-          <LumiMascot size="sm" message="Play games to earn more shiny stars!" />
-        </div>
+        <LumiMascot 
+          size="sm" 
+          message="Pick any game below to play! Win stars for every completed puzzle."
+        />
       </div>
 
-      {/* 6 Mini Game Selector Tabs */}
+      {/* Game Selector Strip */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
-        {games.map((g) => {
+        {gamesList.map((g) => {
           const isActive = activeGame === g.id;
           return (
             <button
               key={g.id}
+              type="button"
               onClick={() => {
                 sound.playPop();
                 setActiveGame(g.id);
               }}
-              className={`p-2.5 sm:p-3 rounded-2xl font-display font-bold text-xs flex flex-col items-center gap-1 transition-all duration-200 border-2 ${
-                isActive
-                  ? 'bg-white border-amber-400 text-amber-950 shadow-md scale-105'
-                  : 'bg-white/80 border-slate-200 text-slate-600 hover:bg-white'
+              className={`btn-bubbly p-3 rounded-2xl border-2 flex flex-col items-center justify-center gap-1.5 font-display font-bold text-xs sm:text-sm transition-all min-h-[58px] ${
+                isActive 
+                  ? 'bg-white dark:bg-slate-800 border-amber-400 text-amber-950 dark:text-amber-300 shadow-md scale-105'
+                  : 'bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800'
               }`}
             >
               <span className="text-2xl sm:text-3xl">{g.icon}</span>
@@ -490,19 +484,20 @@ export default function PlayZone({ stars, setStars }) {
 
       {/* GAME 1: MEMORY MATRIX */}
       {activeGame === 'memory-cards' && (
-        <div className="card-soft p-5 sm:p-8 bg-white border-2 border-amber-200 shadow-md space-y-5">
+        <div className="card-soft p-5 sm:p-8 bg-white dark:bg-slate-800 border-2 border-amber-200 dark:border-slate-700 shadow-md space-y-5">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-display font-bold text-xl sm:text-2xl text-slate-800">
+              <h2 className="font-display font-bold text-xl sm:text-2xl text-slate-800 dark:text-slate-100">
                 Memory Matrix Flip Game
               </h2>
-              <p className="text-xs sm:text-sm text-slate-500 font-medium">
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
                 Flip two cards at a time to find matching pairs! Moves: {moves} | Matched: {matchedPairs.length / 2} / 6
               </p>
             </div>
             <button
+              type="button"
               onClick={() => { sound.playPop(); resetMemoryGame(); }}
-              className="btn-bubbly flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs"
+              className="btn-bubbly flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold text-xs"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset Cards</span>
@@ -510,24 +505,26 @@ export default function PlayZone({ stars, setStars }) {
           </div>
 
           {memoryCompleted ? (
-            <div className="p-8 rounded-3xl bg-amber-50 border-2 border-amber-300 text-center space-y-4 animate-fade-in max-w-md mx-auto">
+            <div className="p-8 rounded-3xl bg-amber-50 dark:bg-amber-950/50 border-2 border-amber-300 dark:border-amber-700 text-center space-y-4 animate-fade-in max-w-md mx-auto">
               <span className="text-6xl block animate-bounce">🃏🎉</span>
-              <h3 className="font-display font-black text-2xl text-slate-800">
+              <h3 className="font-display font-black text-2xl text-slate-800 dark:text-slate-100">
                 Memory Matrix Solved!
               </h3>
-              <p className="text-xs sm:text-sm text-slate-600 font-medium">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-medium">
                 Incredible memory! You matched all pairs in only {moves} moves and earned +4 ⭐ stars!
               </p>
               <div className="flex gap-3 justify-center pt-2">
                 <button
+                  type="button"
                   onClick={() => { sound.playPop(); resetMemoryGame(); }}
                   className="btn-bubbly px-6 py-2.5 rounded-2xl bg-amber-400 font-display font-bold text-xs text-amber-950"
                 >
                   Play Again
                 </button>
                 <button
+                  type="button"
                   onClick={() => { sound.playPop(); nextGameSequence(); }}
-                  className="btn-bubbly px-6 py-2.5 rounded-2xl bg-white border border-slate-300 font-display font-bold text-xs text-slate-700"
+                  className="btn-bubbly px-6 py-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 font-display font-bold text-xs text-slate-700 dark:text-slate-200"
                 >
                   Next Game ➔
                 </button>
@@ -544,9 +541,9 @@ export default function PlayZone({ stars, setStars }) {
                     onClick={() => handleCardClick(idx)}
                     className={`h-22 sm:h-26 rounded-3xl flex items-center justify-center text-3xl sm:text-4xl cursor-pointer select-none transition-all duration-300 transform ${
                       isMatched
-                        ? 'bg-emerald-100 border-2 border-emerald-300 shadow-sm opacity-90'
+                        ? 'bg-emerald-100 dark:bg-emerald-950 border-2 border-emerald-300 dark:border-emerald-700 shadow-sm opacity-90'
                         : isFlipped
-                        ? 'bg-amber-100 border-2 border-amber-300 shadow-md'
+                        ? 'bg-amber-100 dark:bg-amber-950 border-2 border-amber-300 dark:border-amber-700 shadow-md'
                         : 'bg-gradient-to-tr from-sky-400 to-indigo-500 text-white font-display font-extrabold shadow hover:scale-105'
                     }`}
                   >
@@ -559,16 +556,17 @@ export default function PlayZone({ stars, setStars }) {
         </div>
       )}
 
-      {/* GAME 2: ANIMAL SOUND & PICTURE MATCH */}
+      {/* GAME 2: ANIMAL MATCH */}
       {activeGame === 'animal-match' && (
-        <div className="card-soft p-5 sm:p-8 bg-white border-2 border-pink-200 shadow-md space-y-5 text-center">
-          <div className="flex items-center justify-between pb-2 border-b border-pink-100">
-            <span className="text-xs font-bold text-pink-600 uppercase tracking-wider">
+        <div className="card-soft p-5 sm:p-8 bg-white dark:bg-slate-800 border-2 border-pink-200 dark:border-slate-700 shadow-md space-y-5 text-center">
+          <div className="flex items-center justify-between pb-2 border-b border-pink-100 dark:border-slate-700">
+            <span className="text-xs font-bold text-pink-600 dark:text-pink-400 uppercase tracking-wider">
               Animal Match • Round {animalRound + 1} of {animalQuestions.length}
             </span>
             <button
+              type="button"
               onClick={() => { sound.playPop(); resetAnimalGame(); }}
-              className="btn-bubbly flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-pink-50 hover:bg-pink-100 text-pink-800 font-bold text-xs"
+              className="btn-bubbly flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-pink-50 dark:bg-pink-950/60 hover:bg-pink-100 text-pink-800 dark:text-pink-300 font-bold text-xs"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset</span>
@@ -576,24 +574,26 @@ export default function PlayZone({ stars, setStars }) {
           </div>
 
           {animalCompleted ? (
-            <div className="p-8 rounded-3xl bg-pink-50 border-2 border-pink-300 text-center space-y-4 animate-fade-in max-w-md mx-auto">
+            <div className="p-8 rounded-3xl bg-pink-50 dark:bg-pink-950/50 border-2 border-pink-300 dark:border-pink-700 text-center space-y-4 animate-fade-in max-w-md mx-auto">
               <span className="text-6xl block animate-bounce">🦁🎉</span>
-              <h3 className="font-display font-black text-2xl text-slate-800">
+              <h3 className="font-display font-black text-2xl text-slate-800 dark:text-slate-100">
                 Animal Safari Complete!
               </h3>
-              <p className="text-xs sm:text-sm text-slate-600 font-medium">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-medium">
                 You know all the wild animal calls like a true safari ranger! (+3 ⭐ earned)
               </p>
               <div className="flex gap-3 justify-center pt-2">
                 <button
+                  type="button"
                   onClick={() => { sound.playPop(); resetAnimalGame(); }}
                   className="btn-bubbly px-6 py-2.5 rounded-2xl bg-pink-500 text-white font-display font-bold text-xs"
                 >
                   Play Again
                 </button>
                 <button
+                  type="button"
                   onClick={() => { sound.playPop(); nextGameSequence(); }}
-                  className="btn-bubbly px-6 py-2.5 rounded-2xl bg-slate-100 text-slate-700 font-display font-bold text-xs"
+                  className="btn-bubbly px-6 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-display font-bold text-xs"
                 >
                   Next Game ➔
                 </button>
@@ -602,13 +602,13 @@ export default function PlayZone({ stars, setStars }) {
           ) : (
             <div className="space-y-5">
               <div className="space-y-1">
-                <h2 className="font-display font-bold text-xl sm:text-2xl text-slate-800">
+                <h2 className="font-display font-bold text-xl sm:text-2xl text-slate-800 dark:text-slate-100">
                   Who Makes This Wild Call?
                 </h2>
-                <div className="inline-block px-5 py-2 rounded-full bg-pink-100 border border-pink-300 text-pink-900 font-display font-extrabold text-lg sm:text-xl mt-1">
+                <div className="inline-block px-5 py-2 rounded-full bg-pink-100 dark:bg-pink-950 border border-pink-300 dark:border-pink-800 text-pink-900 dark:text-pink-300 font-display font-extrabold text-lg sm:text-xl mt-1">
                   "{animalQuestions[animalRound].targetSound}"
                 </div>
-                <p className="text-xs text-slate-500 font-medium mt-1">
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
                   Tap the animal that roars or calls with this sound:
                 </p>
               </div>
@@ -617,9 +617,10 @@ export default function PlayZone({ stars, setStars }) {
                 {animalQuestions[animalRound].options.map((opt, i) => (
                   <button
                     key={i}
+                    type="button"
                     onClick={() => handleAnimalPick(i)}
                     disabled={animalLock}
-                    className="btn-bubbly h-24 sm:h-28 rounded-3xl bg-slate-50 hover:bg-pink-50 border-2 border-slate-200 hover:border-pink-300 text-4xl sm:text-5xl flex items-center justify-center shadow-sm disabled:opacity-50"
+                    className="btn-bubbly h-24 sm:h-28 rounded-3xl bg-slate-50 dark:bg-slate-900 hover:bg-pink-50 dark:hover:bg-slate-700 border-2 border-slate-200 dark:border-slate-700 hover:border-pink-300 text-4xl sm:text-5xl flex items-center justify-center shadow-sm disabled:opacity-50"
                   >
                     {opt}
                   </button>
@@ -627,7 +628,7 @@ export default function PlayZone({ stars, setStars }) {
               </div>
 
               {animalFeedback && (
-                <div className={`text-sm sm:text-base font-bold font-display ${animalFeedback === 'correct' ? 'text-emerald-600' : 'text-rose-500'}`}>
+                <div className={`text-sm sm:text-base font-bold font-display ${animalFeedback === 'correct' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
                   {animalFeedback === 'correct' ? '✨ Wow! That is correct!' : 'Oops! Try again!'}
                 </div>
               )}
@@ -636,16 +637,17 @@ export default function PlayZone({ stars, setStars }) {
         </div>
       )}
 
-      {/* GAME 3: MYSTERY SHADOW RIDDLE (GENUINE SILHOUETTE) */}
+      {/* GAME 3: SHADOW RIDDLE */}
       {activeGame === 'silhouette-guess' && (
-        <div className="card-soft p-5 sm:p-8 bg-white border-2 border-purple-200 shadow-md space-y-5 text-center">
-          <div className="flex items-center justify-between pb-2 border-b border-purple-100">
-            <span className="text-xs font-bold text-purple-600 uppercase tracking-wider">
+        <div className="card-soft p-5 sm:p-8 bg-white dark:bg-slate-800 border-2 border-purple-200 dark:border-slate-700 shadow-md space-y-5 text-center">
+          <div className="flex items-center justify-between pb-2 border-b border-purple-100 dark:border-slate-700">
+            <span className="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">
               Shadow Riddle • Clue {mysteryRound + 1} of {mysteryItems.length}
             </span>
             <button
+              type="button"
               onClick={() => { sound.playPop(); resetMysteryGame(); }}
-              className="btn-bubbly flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold text-xs"
+              className="btn-bubbly flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 text-purple-800 dark:text-purple-300 font-bold text-xs"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset</span>
@@ -653,24 +655,26 @@ export default function PlayZone({ stars, setStars }) {
           </div>
 
           {mysteryCompleted ? (
-            <div className="p-8 rounded-3xl bg-purple-50 border-2 border-purple-300 text-center space-y-4 animate-fade-in max-w-md mx-auto">
+            <div className="p-8 rounded-3xl bg-purple-50 dark:bg-purple-950/50 border-2 border-purple-300 dark:border-purple-700 text-center space-y-4 animate-fade-in max-w-md mx-auto">
               <span className="text-6xl block animate-bounce">🔍✨</span>
-              <h3 className="font-display font-black text-2xl text-slate-800">
+              <h3 className="font-display font-black text-2xl text-slate-800 dark:text-slate-100">
                 All Riddles Cracked!
               </h3>
-              <p className="text-xs sm:text-sm text-slate-600 font-medium">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-medium">
                 You solved every shadow mystery with sharp detective eyes! (+3 ⭐ earned)
               </p>
               <div className="flex gap-3 justify-center pt-2">
                 <button
+                  type="button"
                   onClick={() => { sound.playPop(); resetMysteryGame(); }}
                   className="btn-bubbly px-6 py-2.5 rounded-2xl bg-purple-600 text-white font-display font-bold text-xs"
                 >
                   Play Again
                 </button>
                 <button
+                  type="button"
                   onClick={() => { sound.playPop(); nextGameSequence(); }}
-                  className="btn-bubbly px-6 py-2.5 rounded-2xl bg-slate-100 text-slate-700 font-display font-bold text-xs"
+                  className="btn-bubbly px-6 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-display font-bold text-xs"
                 >
                   Next Game ➔
                 </button>
@@ -678,12 +682,11 @@ export default function PlayZone({ stars, setStars }) {
             </div>
           ) : (
             <div className="space-y-5">
-              <h2 className="font-display font-bold text-xl sm:text-2xl text-slate-800">
+              <h2 className="font-display font-bold text-xl sm:text-2xl text-slate-800 dark:text-slate-100">
                 Who Am I? Mystery Silhouette
               </h2>
 
-              {/* Authentic Silhouette: Black shadow outline until revealed! */}
-              <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-4xl bg-purple-100 border-2 border-purple-300 mx-auto flex items-center justify-center text-6xl shadow-inner transition-all duration-500">
+              <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-4xl bg-purple-100 dark:bg-purple-950 border-2 border-purple-300 dark:border-purple-800 mx-auto flex items-center justify-center text-6xl shadow-inner transition-all duration-500">
                 <span 
                   className={`transition-all duration-500 transform ${
                     mysteryRevealed 
@@ -695,7 +698,7 @@ export default function PlayZone({ stars, setStars }) {
                 </span>
               </div>
 
-              <p className="font-display font-bold text-base sm:text-lg text-purple-950 max-w-md mx-auto">
+              <p className="font-display font-bold text-base sm:text-lg text-purple-950 dark:text-purple-200 max-w-md mx-auto">
                 "{mysteryItems[mysteryRound].clue}"
               </p>
 
@@ -703,9 +706,10 @@ export default function PlayZone({ stars, setStars }) {
                 {mysteryItems[mysteryRound].options.map((opt, i) => (
                   <button
                     key={i}
+                    type="button"
                     onClick={() => handleMysteryPick(opt)}
                     disabled={mysteryLock}
-                    className="btn-bubbly p-3 rounded-2xl bg-slate-50 hover:bg-purple-100 text-slate-800 font-display font-bold text-xs sm:text-sm border-2 border-slate-200 hover:border-purple-300 disabled:opacity-50 min-h-[48px]"
+                    className="btn-bubbly p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 hover:bg-purple-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-display font-bold text-xs sm:text-sm border-2 border-slate-200 dark:border-slate-700 hover:border-purple-300 disabled:opacity-50 min-h-[48px]"
                   >
                     {opt}
                   </button>
@@ -713,7 +717,7 @@ export default function PlayZone({ stars, setStars }) {
               </div>
 
               {mysteryFeedback && (
-                <div className={`text-sm sm:text-base font-bold font-display ${mysteryFeedback === 'correct' ? 'text-emerald-600' : 'text-rose-500'}`}>
+                <div className={`text-sm sm:text-base font-bold font-display ${mysteryFeedback === 'correct' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
                   {mysteryFeedback === 'correct' ? '🎉 You cracked the riddle!' : 'Not quite! Try another choice!'}
                 </div>
               )}
@@ -724,14 +728,15 @@ export default function PlayZone({ stars, setStars }) {
 
       {/* GAME 4: CATEGORY SORTER BASKET */}
       {activeGame === 'category-sort' && (
-        <div className="card-soft p-5 sm:p-8 bg-white border-2 border-emerald-200 shadow-md space-y-5 text-center">
-          <div className="flex items-center justify-between pb-2 border-b border-emerald-100">
-            <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
+        <div className="card-soft p-5 sm:p-8 bg-white dark:bg-slate-800 border-2 border-emerald-200 dark:border-slate-700 shadow-md space-y-5 text-center">
+          <div className="flex items-center justify-between pb-2 border-b border-emerald-100 dark:border-slate-700">
+            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
               Basket Sorter • {sortedCount} / {sortItems.length}
             </span>
             <button
+              type="button"
               onClick={() => { sound.playPop(); resetSortGame(); }}
-              className="btn-bubbly flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs"
+              className="btn-bubbly flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-800 dark:text-emerald-300 font-bold text-xs"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset</span>
@@ -739,24 +744,26 @@ export default function PlayZone({ stars, setStars }) {
           </div>
 
           {sortCompleted ? (
-            <div className="p-8 rounded-3xl bg-emerald-50 border-2 border-emerald-300 text-center space-y-4 animate-fade-in max-w-md mx-auto">
+            <div className="p-8 rounded-3xl bg-emerald-50 dark:bg-emerald-950/50 border-2 border-emerald-300 dark:border-emerald-700 text-center space-y-4 animate-fade-in max-w-md mx-auto">
               <span className="text-6xl block animate-bounce">🧺🥗</span>
-              <h3 className="font-display font-black text-2xl text-slate-800">
+              <h3 className="font-display font-black text-2xl text-slate-800 dark:text-slate-100">
                 Basket Sorting Champion!
               </h3>
-              <p className="text-xs sm:text-sm text-slate-600 font-medium">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-medium">
                 You correctly sorted healthy foods and sweet treats into their baskets! (+3 ⭐ earned)
               </p>
               <div className="flex gap-3 justify-center pt-2">
                 <button
+                  type="button"
                   onClick={() => { sound.playPop(); resetSortGame(); }}
                   className="btn-bubbly px-6 py-2.5 rounded-2xl bg-emerald-600 text-white font-display font-bold text-xs"
                 >
                   Play Again
                 </button>
                 <button
+                  type="button"
                   onClick={() => { sound.playPop(); nextGameSequence(); }}
-                  className="btn-bubbly px-6 py-2.5 rounded-2xl bg-slate-100 text-slate-700 font-display font-bold text-xs"
+                  className="btn-bubbly px-6 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-display font-bold text-xs"
                 >
                   Next Game ➔
                 </button>
@@ -765,47 +772,47 @@ export default function PlayZone({ stars, setStars }) {
           ) : (
             <div className="space-y-5">
               <div className="space-y-1">
-                <h2 className="font-display font-bold text-xl sm:text-2xl text-slate-800">
+                <h2 className="font-display font-bold text-xl sm:text-2xl text-slate-800 dark:text-slate-100">
                   Healthy Basket Sorter
                 </h2>
-                <p className="text-xs text-slate-500 font-medium">
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                   Sort each delicious item into the correct basket!
                 </p>
               </div>
 
-              {/* Current Item to Sort */}
-              <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-amber-50 border-2 border-amber-300 mx-auto flex flex-col items-center justify-center shadow-md animate-bounce-gentle">
+              <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-amber-50 dark:bg-amber-950/60 border-2 border-amber-300 dark:border-amber-700 mx-auto flex flex-col items-center justify-center shadow-md animate-bounce-gentle">
                 <span className="text-5xl">{sortItems[sortIndex].icon}</span>
-                <span className="font-display font-bold text-xs sm:text-sm text-amber-900 mt-1">
+                <span className="font-display font-bold text-xs sm:text-sm text-amber-900 dark:text-amber-300 mt-1">
                   {sortItems[sortIndex].name}
                 </span>
               </div>
 
-              {/* Target Baskets */}
               <div className="grid grid-cols-2 gap-3 sm:gap-4 max-w-md mx-auto">
                 <button
+                  type="button"
                   onClick={() => handleSortItem('Healthy Foods')}
                   disabled={sortLock}
-                  className="btn-bubbly p-4 rounded-3xl bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-300 text-emerald-950 flex flex-col items-center gap-1.5 disabled:opacity-50 min-h-[48px]"
+                  className="btn-bubbly p-4 rounded-3xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 border-2 border-emerald-300 dark:border-emerald-700 text-emerald-950 dark:text-emerald-200 flex flex-col items-center gap-1.5 disabled:opacity-50 min-h-[48px]"
                 >
                   <span className="text-3xl">🥗</span>
                   <span className="font-display font-bold text-sm sm:text-base">Healthy Foods</span>
-                  <span className="text-[10px] text-emerald-700">Fruits &amp; Veggies</span>
+                  <span className="text-[10px] text-emerald-700 dark:text-emerald-400">Fruits &amp; Veggies</span>
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => handleSortItem('Sweet Treats')}
                   disabled={sortLock}
-                  className="btn-bubbly p-4 rounded-3xl bg-pink-50 hover:bg-pink-100 border-2 border-pink-300 text-pink-950 flex flex-col items-center gap-1.5 disabled:opacity-50 min-h-[48px]"
+                  className="btn-bubbly p-4 rounded-3xl bg-pink-50 dark:bg-pink-950/60 hover:bg-pink-100 border-2 border-pink-300 dark:border-pink-700 text-pink-950 dark:text-pink-200 flex flex-col items-center gap-1.5 disabled:opacity-50 min-h-[48px]"
                 >
                   <span className="text-3xl">🧁</span>
                   <span className="font-display font-bold text-sm sm:text-base">Sweet Treats</span>
-                  <span className="text-[10px] text-pink-700">Desserts &amp; Candy</span>
+                  <span className="text-[10px] text-pink-700 dark:text-pink-400">Desserts &amp; Candy</span>
                 </button>
               </div>
 
               {sortFeedback && (
-                <div className={`text-sm sm:text-base font-bold font-display ${sortFeedback === 'correct' ? 'text-emerald-600' : 'text-rose-500'}`}>
+                <div className={`text-sm sm:text-base font-bold font-display ${sortFeedback === 'correct' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
                   {sortFeedback === 'correct' ? '🥬 Great choice! Placed into the right basket!' : 'Oops, that belongs in the other basket!'}
                 </div>
               )}
@@ -816,14 +823,15 @@ export default function PlayZone({ stars, setStars }) {
 
       {/* GAME 5: COUNTING SAFARI */}
       {activeGame === 'counting-safari' && (
-        <div className="card-soft p-5 sm:p-8 bg-white border-2 border-sky-200 shadow-md space-y-5 text-center">
-          <div className="flex items-center justify-between pb-2 border-b border-sky-100">
-            <span className="text-xs font-bold text-sky-600 uppercase tracking-wider">
+        <div className="card-soft p-5 sm:p-8 bg-white dark:bg-slate-800 border-2 border-sky-200 dark:border-slate-700 shadow-md space-y-5 text-center">
+          <div className="flex items-center justify-between pb-2 border-b border-sky-100 dark:border-slate-700">
+            <span className="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider">
               Counting Safari • Quest {safariRound + 1} of {safariItems.length}
             </span>
             <button
+              type="button"
               onClick={() => { sound.playPop(); resetSafariGame(); }}
-              className="btn-bubbly flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 font-bold text-xs"
+              className="btn-bubbly flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 text-sky-800 dark:text-sky-300 font-bold text-xs"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset</span>
@@ -831,24 +839,26 @@ export default function PlayZone({ stars, setStars }) {
           </div>
 
           {safariCompleted ? (
-            <div className="p-8 rounded-3xl bg-sky-50 border-2 border-sky-300 text-center space-y-4 animate-fade-in max-w-md mx-auto">
+            <div className="p-8 rounded-3xl bg-sky-50 dark:bg-sky-950/50 border-2 border-sky-300 dark:border-sky-700 text-center space-y-4 animate-fade-in max-w-md mx-auto">
               <span className="text-6xl block animate-bounce">🧮🦁</span>
-              <h3 className="font-display font-black text-2xl text-slate-800">
+              <h3 className="font-display font-black text-2xl text-slate-800 dark:text-slate-100">
                 Counting Safari Master!
               </h3>
-              <p className="text-xs sm:text-sm text-slate-600 font-medium">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-medium">
                 You accurately counted all the safari animals and items! (+3 ⭐ earned)
               </p>
               <div className="flex gap-3 justify-center pt-2">
                 <button
+                  type="button"
                   onClick={() => { sound.playPop(); resetSafariGame(); }}
                   className="btn-bubbly px-6 py-2.5 rounded-2xl bg-sky-600 text-white font-display font-bold text-xs"
                 >
                   Play Again
                 </button>
                 <button
+                  type="button"
                   onClick={() => { sound.playPop(); nextGameSequence(); }}
-                  className="btn-bubbly px-6 py-2.5 rounded-2xl bg-slate-100 text-slate-700 font-display font-bold text-xs"
+                  className="btn-bubbly px-6 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-display font-bold text-xs"
                 >
                   Next Game ➔
                 </button>
@@ -857,16 +867,15 @@ export default function PlayZone({ stars, setStars }) {
           ) : (
             <div className="space-y-5">
               <div className="space-y-1">
-                <h2 className="font-display font-bold text-xl sm:text-2xl text-slate-800">
+                <h2 className="font-display font-bold text-xl sm:text-2xl text-slate-800 dark:text-slate-100">
                   Counting Safari
                 </h2>
-                <p className="font-display font-bold text-sm sm:text-base text-sky-900">
+                <p className="font-display font-bold text-sm sm:text-base text-sky-900 dark:text-sky-300">
                   {safariItems[safariRound].prompt}
                 </p>
               </div>
 
-              {/* Items Canvas */}
-              <div className="p-5 rounded-3xl bg-sky-50 border border-sky-200 max-w-md mx-auto flex flex-wrap items-center justify-center gap-3">
+              <div className="p-5 rounded-3xl bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 max-w-md mx-auto flex flex-wrap items-center justify-center gap-3">
                 {Array.from({ length: safariItems[safariRound].count }).map((_, i) => (
                   <span key={i} className="text-3xl sm:text-4xl animate-float" style={{ animationDelay: `${i * 0.15}s` }}>
                     {safariItems[safariRound].itemIcon}
@@ -874,14 +883,14 @@ export default function PlayZone({ stars, setStars }) {
                 ))}
               </div>
 
-              {/* Number Choices - Accessible touch targets >= 48px */}
               <div className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
                 {[2, 3, 4, 5, 6, 7, 8].map((num) => (
                   <button
                     key={num}
+                    type="button"
                     onClick={() => handleSafariPick(num)}
                     disabled={safariLock}
-                    className="btn-bubbly w-12 h-12 rounded-2xl bg-white border-2 border-sky-300 hover:bg-sky-100 text-sky-900 font-display font-black text-lg shadow-sm disabled:opacity-50 min-w-[48px] min-h-[48px]"
+                    className="btn-bubbly w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 border-2 border-sky-300 dark:border-sky-700 hover:bg-sky-100 text-sky-900 dark:text-sky-300 font-display font-black text-lg shadow-sm disabled:opacity-50 min-w-[48px] min-h-[48px]"
                   >
                     {num}
                   </button>
@@ -889,7 +898,7 @@ export default function PlayZone({ stars, setStars }) {
               </div>
 
               {safariFeedback && (
-                <div className={`text-sm sm:text-base font-bold font-display ${safariFeedback === 'correct' ? 'text-emerald-600' : 'text-rose-500'}`}>
+                <div className={`text-sm sm:text-base font-bold font-display ${safariFeedback === 'correct' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
                   {safariFeedback === 'correct' ? '🦁 Correct count! You counted like a pro!' : 'Count carefully and try once more!'}
                 </div>
               )}
@@ -900,14 +909,15 @@ export default function PlayZone({ stars, setStars }) {
 
       {/* GAME 6: LIGHTNING BLITZ */}
       {activeGame === 'color-shape-blitz' && (
-        <div className="card-soft p-5 sm:p-8 bg-white border-2 border-amber-300 shadow-md space-y-5 text-center">
-          <div className="flex items-center justify-between pb-2 border-b border-amber-100">
-            <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">
+        <div className="card-soft p-5 sm:p-8 bg-white dark:bg-slate-800 border-2 border-amber-300 dark:border-slate-700 shadow-md space-y-5 text-center">
+          <div className="flex items-center justify-between pb-2 border-b border-amber-100 dark:border-slate-700">
+            <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
               Speed Reflex • Round {blitzRound + 1} of {blitzItems.length}
             </span>
             <button
+              type="button"
               onClick={() => { sound.playPop(); resetBlitzGame(); }}
-              className="btn-bubbly flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs"
+              className="btn-bubbly flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 text-amber-800 dark:text-amber-300 font-bold text-xs"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset</span>
@@ -915,24 +925,26 @@ export default function PlayZone({ stars, setStars }) {
           </div>
 
           {blitzCompleted ? (
-            <div className="p-8 rounded-3xl bg-amber-50 border-2 border-amber-300 text-center space-y-4 animate-fade-in max-w-md mx-auto">
+            <div className="p-8 rounded-3xl bg-amber-50 dark:bg-amber-950/50 border-2 border-amber-300 dark:border-amber-700 text-center space-y-4 animate-fade-in max-w-md mx-auto">
               <span className="text-6xl block animate-bounce">⚡🏆</span>
-              <h3 className="font-display font-black text-2xl text-slate-800">
+              <h3 className="font-display font-black text-2xl text-slate-800 dark:text-slate-100">
                 Lightning Blitz Champion!
               </h3>
-              <p className="text-xs sm:text-sm text-slate-600 font-medium">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-medium">
                 Incredible speed reflexes! You correctly identified colors and shapes with lightning accuracy! (+4 ⭐ earned)
               </p>
               <div className="flex gap-3 justify-center pt-2">
                 <button
+                  type="button"
                   onClick={() => { sound.playPop(); resetBlitzGame(); }}
                   className="btn-bubbly px-6 py-2.5 rounded-2xl bg-amber-400 font-display font-bold text-xs text-amber-950"
                 >
                   Play Again
                 </button>
                 <button
+                  type="button"
                   onClick={() => { sound.playPop(); nextGameSequence(); }}
-                  className="btn-bubbly px-6 py-2.5 rounded-2xl bg-white border border-slate-300 font-display font-bold text-xs text-slate-700"
+                  className="btn-bubbly px-6 py-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 font-display font-bold text-xs text-slate-700 dark:text-slate-200"
                 >
                   Next Game ➔
                 </button>
@@ -940,65 +952,42 @@ export default function PlayZone({ stars, setStars }) {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="flex items-center justify-between max-w-md mx-auto text-xs font-bold text-slate-400">
+              <div className="flex items-center justify-between max-w-md mx-auto text-xs font-bold text-slate-400 dark:text-slate-500">
                 <span>Reflex Timer</span>
-                <span className={`font-mono font-bold ${blitzTimeLeft <= 3 ? 'text-rose-600 animate-pulse' : 'text-amber-600'}`}>
+                <span className={`font-mono font-bold ${blitzTimeLeft <= 3 ? 'text-rose-600 dark:text-rose-400 animate-pulse' : 'text-amber-600 dark:text-amber-400'}`}>
                   ⏳ {blitzTimeLeft}s left
                 </span>
               </div>
-              
-              {/* Timer bar */}
-              <div className="max-w-md mx-auto bg-slate-100 h-2 rounded-full overflow-hidden">
+
+              <div className="w-full bg-slate-100 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden max-w-md mx-auto">
                 <div 
                   className="h-full bg-gradient-to-r from-amber-400 to-rose-500 transition-all duration-1000"
                   style={{ width: `${(blitzTimeLeft / 10) * 100}%` }}
                 />
               </div>
 
-              <h2 className="font-display font-bold text-xl sm:text-2xl text-slate-800 pt-2">
-                Color &amp; Shape Lightning Blitz
-              </h2>
-              <div className="inline-block px-5 py-2 rounded-full bg-amber-400 text-amber-950 font-display font-extrabold text-lg sm:text-xl mt-1">
+              <h2 className="font-display font-extrabold text-xl sm:text-2xl text-amber-900 dark:text-amber-300">
                 {blitzItems[blitzRound].prompt}
-              </div>
+              </h2>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-lg mx-auto">
+              <div className="grid grid-cols-3 gap-3 max-w-md mx-auto">
                 {blitzItems[blitzRound].options.map((opt, i) => (
                   <button
                     key={i}
+                    type="button"
                     onClick={() => handleBlitzPick(opt.isCorrect)}
-                    disabled={!blitzActive || blitzLock}
-                    className="btn-bubbly p-4 rounded-3xl bg-slate-50 hover:bg-amber-100 border-2 border-slate-200 hover:border-amber-400 flex flex-col items-center gap-1.5 disabled:opacity-50 min-h-[48px]"
+                    disabled={blitzLock || !blitzActive}
+                    className="btn-bubbly h-24 sm:h-28 rounded-3xl bg-slate-50 dark:bg-slate-900 hover:bg-amber-100 dark:hover:bg-slate-700 border-2 border-slate-200 dark:border-slate-700 hover:border-amber-400 text-4xl sm:text-5xl flex flex-col items-center justify-center shadow-sm disabled:opacity-50"
                   >
-                    <span className="text-5xl">{opt.icon}</span>
-                    <span className="font-display font-bold text-xs sm:text-sm text-slate-800">
-                      {opt.label}
-                    </span>
+                    <span>{opt.icon}</span>
+                    <span className="text-[10px] font-display font-bold text-slate-600 dark:text-slate-400 mt-1">{opt.label}</span>
                   </button>
                 ))}
               </div>
 
-              {!blitzActive && (
-                <div className="space-y-2">
-                  <p className="font-display font-bold text-rose-600 text-sm">
-                    Time ran out on the blitz!
-                  </p>
-                  <button
-                    onClick={() => {
-                      sound.playPop();
-                      setBlitzActive(true);
-                      setBlitzTimeLeft(10);
-                    }}
-                    className="btn-bubbly px-5 py-2 rounded-xl bg-amber-400 font-bold text-xs text-amber-950"
-                  >
-                    Restart Blitz Timer
-                  </button>
-                </div>
-              )}
-
               {blitzFeedback && (
-                <div className={`text-sm sm:text-base font-bold font-display ${blitzFeedback === 'correct' ? 'text-emerald-600' : 'text-rose-500'}`}>
-                  {blitzFeedback === 'correct' ? '⚡ Lightning fast! Spot on!' : 'Not this one! Try another!'}
+                <div className={`text-sm sm:text-base font-bold font-display ${blitzFeedback === 'correct' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
+                  {blitzFeedback === 'correct' ? '⚡ Lightning fast! Correct!' : 'Oops! Blitz again!'}
                 </div>
               )}
             </div>
