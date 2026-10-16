@@ -1,0 +1,6 @@
+{
+  "name": "Little Learners",
+  "description": "Interactive Kids Learning Platform with Java Spring Boot DSA backend and React web client.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
