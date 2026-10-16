@@ -46,6 +46,21 @@ public class QuizService {
         // Animals Questions
         addQ(new QuizQuestion("q-ani-1", "animals", "Easy", "Which animal is famous as the 'King of the Jungle'?", "🦁", Arrays.asList("Lion", "Zebra", "Monkey", "Giraffe"), 0, "The majestic lion is celebrated as the King of the Jungle!"));
         addQ(new QuizQuestion("q-ani-2", "animals", "Medium", "Which friendly sea mammal loves jumping high over ocean waves?", "🌊", Arrays.asList("Shark", "Dolphin", "Crab", "Octopus"), 1, "Dolphins are playful and leap gracefully through waves!"));
+
+        // Fruits & Veggies Questions
+        addQ(new QuizQuestion("q-fv-1", "fruits-veggies", "Easy", "Which crunchy orange vegetable is famous for supporting bright healthy eyesight?", "🥕", Arrays.asList("Carrot", "Potato", "Cucumber", "Onion"), 0, "Carrots are rich in Vitamin A, which helps our eyes see clearly!"));
+        addQ(new QuizQuestion("q-fv-2", "fruits-veggies", "Medium", "Which delicious red fruit wears about 200 tiny seeds right on the outside?", "🍓", Arrays.asList("Apple", "Watermelon", "Strawberry", "Grape"), 2, "Strawberries are unique because their tiny seeds sit on the outside skin!"));
+        addQ(new QuizQuestion("q-fv-3", "fruits-veggies", "Challenge", "Why are botanical tomatoes classified as fruits instead of vegetables?", "🍅", Arrays.asList("They are red", "They grow from flowers and contain seeds", "They are sweet", "They grow underground"), 1, "Scientifically, anything that develops from a flower and contains seeds is a fruit!"));
+
+        // Vehicles Questions
+        addQ(new QuizQuestion("q-veh-1", "vehicles", "Easy", "Which amazing vehicle blasts off past Earth clouds into outer space?", "🚀", Arrays.asList("Bicycle", "Rocket", "Submarine", "Bus"), 1, "Rockets use powerful engines to escape Earth gravity and explore the stars!"));
+        addQ(new QuizQuestion("q-veh-2", "vehicles", "Medium", "Which water vessel uses large cloth sails and ocean breezes to travel?", "⛵", Arrays.asList("Submarine", "Sailboat", "Helicopter", "Rocket"), 1, "Sailboats catch the natural power of the wind in their sails to glide across water!"));
+        addQ(new QuizQuestion("q-veh-3", "vehicles", "Challenge", "What special power allows modern Maglev bullet trains to travel super fast and smooth?", "🚆", Arrays.asList("Rocket wings", "Magnetic levitation (floating above tracks)", "Jet engines", "Extra large wheels"), 1, "Maglev trains use powerful magnets to float above tracks, eliminating wheel friction!"));
+
+        // Body Parts Questions
+        addQ(new QuizQuestion("q-bod-1", "body-parts", "Easy", "Which body part beats all day and night to pump blood and oxygen through you?", "❤️", Arrays.asList("Heart", "Brain", "Knee", "Elbow"), 0, "Your heart beats around 100,000 times every single day to keep you energetic and healthy!"));
+        addQ(new QuizQuestion("q-bod-2", "body-parts", "Medium", "Which part of our body contains 86 billion neurons and does all our thinking and dreaming?", "🧠", Arrays.asList("Stomach", "Brain", "Lungs", "Hands"), 1, "The human brain is our body control center for thinking, feeling, and learning!"));
+        addQ(new QuizQuestion("q-bod-3", "body-parts", "Challenge", "What is the hardest and strongest substance in the entire human body?", "🦷", Arrays.asList("Finger bone", "Tooth enamel", "Skull", "Kneecap"), 1, "Tooth enamel is even stronger than human bone, protecting teeth while chewing!"));
     }
 
     private void addQ(QuizQuestion q) {

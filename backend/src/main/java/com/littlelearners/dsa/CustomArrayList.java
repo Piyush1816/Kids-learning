@@ -29,7 +29,7 @@ public class CustomArrayList<T> implements Iterable<T> {
         if (initialCapacity < 0) {
             throw new IllegalArgumentException("Illegal Capacity: " + initialCapacity);
         }
-        this.elements = new Object[Math.max(initialCapacity, DEFAULT_CAPACITY)];
+        this.elements = new Object[initialCapacity];
         this.size = 0;
         this.resizeCount = 0;
     }

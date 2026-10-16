@@ -4,6 +4,7 @@ class SoundService {
   constructor() {
     this.ctx = null;
     this.soundEnabled = true;
+    this.hasSpeechSynthesis = typeof window !== 'undefined' && 'speechSynthesis' in window;
   }
 
   initContext() {
@@ -43,7 +44,7 @@ class SoundService {
       osc.start();
       osc.stop(this.ctx.currentTime + 0.08);
     } catch {
-      // Ignore audio failure
+      // Graceful fallback
     }
   }
 
@@ -127,16 +128,27 @@ class SoundService {
   }
 
   speak(text) {
-    if (!this.soundEnabled || typeof window === 'undefined' || !window.speechSynthesis) return;
-    try {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.85; // slightly slower and friendlier for young children
-      utterance.pitch = 1.15; // friendly uplifting tone
-      window.speechSynthesis.speak(utterance);
-    } catch {
-      // Ignore
+    if (!this.soundEnabled) return;
+
+    // Browser Speech Synthesis with fallbacks
+    if (this.hasSpeechSynthesis && window.speechSynthesis) {
+      try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.85; // slightly slower and clear for children
+        utterance.pitch = 1.15; // friendly tone
+        utterance.onerror = () => {
+          this.playPop(); // fallback to audio beep if speech fails
+        };
+        window.speechSynthesis.speak(utterance);
+        return;
+      } catch {
+        // Fallback
+      }
     }
+
+    // Fallback if SpeechSynthesis is not supported
+    this.playPop();
   }
 }
 

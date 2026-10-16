@@ -19,6 +19,18 @@ public class LessonController {
         this.curriculumService = curriculumService;
     }
 
+    @GetMapping("/health")
+    public ResponseEntity<java.util.Map<String, Object>> getHealth() {
+        return ResponseEntity.ok(java.util.Map.of(
+            "status", "UP",
+            "service", "Little Learners Spring Boot API",
+            "version", "1.0.0",
+            "runtime", "Java 21",
+            "categoriesCount", curriculumService.getAllCategories().size(),
+            "lessonsCount", curriculumService.getAllLessons().size()
+        ));
+    }
+
     @GetMapping("/categories")
     public ResponseEntity<List<Category>> getCategories() {
         return ResponseEntity.ok(curriculumService.getAllCategories());

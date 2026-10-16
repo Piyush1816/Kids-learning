@@ -15,12 +15,12 @@ Welcome to **Little Learners**, an educational web platform designed for childre
 │   │   │   ├── LittleLearnersApplication.java # Spring Boot Main
 │   │   │   ├── config/CorsConfig.java    # Permissive CORS configuration
 │   │   │   ├── controller/               # REST API Endpoints
-│   │   │   │   ├── LessonController.java
-│   │   │   │   ├── QuizController.java
-│   │   │   │   ├── GameController.java
-│   │   │   │   ├── ProgressController.java
-│   │   │   │   ├── RewardController.java
-│   │   │   │   └── DsaVisualizerController.java
+│   │   │   │   ├── LessonController.java # /api/health, /api/categories, /api/lessons
+│   │   │   │   ├── QuizController.java   # /api/quizzes, /api/quizzes/submit
+│   │   │   │   ├── GameController.java   # /api/games
+│   │   │   │   ├── ProgressController.java # /api/challenges, /api/history
+│   │   │   │   ├── RewardController.java # /api/rewards, /api/leaderboard
+│   │   │   │   └── DsaVisualizerController.java # /api/dsa/concepts, benchmarks, search, sort
 │   │   │   ├── dsa/                      # Custom Core DSA Implementations
 │   │   │   │   ├── CustomArrayList.java  # Resizable dynamic array (1.5x growth)
 │   │   │   │   ├── CustomHashMap.java    # Chained hash table for O(1) lookups
@@ -62,26 +62,28 @@ Welcome to **Little Learners**, an educational web platform designed for childre
 ## ⚡ How to Run Both Applications Locally
 
 ### Step 1: Run the Java Spring Boot Backend
-1. Open a terminal in the `backend/` folder:
+1. Open a terminal in the `backend/` directory:
    ```bash
    cd backend
    mvn spring-boot:run
    ```
-2. The backend server starts at: **`http://localhost:8080/api`**
+2. The Spring Boot backend starts at: **`http://localhost:8081`** (API endpoints under **`/api`**, e.g., `/api/health`, `/api/categories`, `/api/dsa/concepts`).
 3. To run all automated DSA unit tests:
    ```bash
+   cd backend
    mvn test
    ```
 
 ### Step 2: Run the React Frontend Client
-1. Open a second terminal in the `frontend/` folder:
+1. Open a second terminal in the `frontend/` directory:
    ```bash
    cd frontend
    npm install
    npm run dev
    ```
-2. Open your browser at: **`http://localhost:5173/`**
-3. The frontend will automatically detect the running Spring Boot backend and display a green indicator in the top navbar: **`● Spring Boot: Live`**!
+2. Open your browser at: **`http://localhost:3000`** (or Vite's default dev port).
+3. The frontend Vite server automatically proxies `/api/*` requests to the Spring Boot backend (`http://localhost:8081`), and the top navbar displays: **`● Spring Boot: Live`**!
+4. When running standalone without the backend, the app falls back seamlessly to the client offline demo engine, showing **`● Demo Mode`**.
 
 ---
 

@@ -35,4 +35,16 @@ public class DsaVisualizerController {
         int boundedSize = Math.max(10, Math.min(size, 2000)); // Cap to avoid huge O(n^2) delays
         return ResponseEntity.ok(dsaVisualizerService.runSortBenchmark(boundedSize));
     }
+
+    @PostMapping("/search")
+    public ResponseEntity<Map<String, Object>> search(
+            @RequestBody Map<String, Object> payload) {
+        return ResponseEntity.ok(dsaVisualizerService.executeCustomSearch(payload));
+    }
+
+    @PostMapping("/sort")
+    public ResponseEntity<Map<String, Object>> sort(
+            @RequestBody Map<String, Object> payload) {
+        return ResponseEntity.ok(dsaVisualizerService.executeCustomSort(payload));
+    }
 }

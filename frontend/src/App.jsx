@@ -16,12 +16,18 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState('landing');
   const [stars, setStars] = useState(24);
   const [badgesCount, setBadgesCount] = useState(3);
+  const [activeLearnCategory, setActiveLearnCategory] = useState('alphabets');
 
   useEffect(() => {
     const profile = api.getProfile();
     setStars(profile.totalStars);
     setBadgesCount(profile.badgesEarned);
   }, []);
+
+  const navigateToLearnCategory = (catId) => {
+    setActiveLearnCategory(catId);
+    setCurrentTab('learn');
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-sky-50 via-white to-amber-50/30 text-slate-800">
@@ -36,14 +42,33 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        {currentTab === 'landing' && <LandingPage setTab={setCurrentTab} />}
-        {currentTab === 'dashboard' && <Dashboard setTab={setCurrentTab} stars={stars} setStars={setStars} badgesCount={badgesCount} />}
-        {currentTab === 'learn' && <ExploreLearn stars={stars} setStars={setStars} />}
+        {currentTab === 'landing' && (
+          <LandingPage 
+            setTab={setCurrentTab} 
+            onSelectCategory={navigateToLearnCategory} 
+          />
+        )}
+        {currentTab === 'dashboard' && (
+          <Dashboard 
+            setTab={setCurrentTab} 
+            stars={stars} 
+            setStars={setStars} 
+            badgesCount={badgesCount} 
+            onSelectCategory={navigateToLearnCategory} 
+          />
+        )}
+        {currentTab === 'learn' && (
+          <ExploreLearn 
+            stars={stars} 
+            setStars={setStars} 
+            initialCategory={activeLearnCategory} 
+          />
+        )}
         {currentTab === 'play' && <PlayZone stars={stars} setStars={setStars} />}
         {currentTab === 'quiz' && <QuizAdventure stars={stars} setStars={setStars} />}
         {currentTab === 'rewards' && <RewardsRoom stars={stars} />}
         {currentTab === 'draw' && <CreativeCorner />}
-        {currentTab === 'parents' && <ParentCorner stars={stars} />}
+        {currentTab === 'parents' && <ParentCorner stars={stars} onSelectCategory={navigateToLearnCategory} />}
         {currentTab === 'dsa' && <DsaLab />}
         {currentTab === 'settings' && <Settings setStars={setStars} />}
       </main>

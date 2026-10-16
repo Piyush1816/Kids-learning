@@ -167,6 +167,82 @@ public class DsaVisualizerService {
         return concepts;
     }
 
+    public Map<String, Object> executeCustomSearch(Map<String, Object> payload) {
+        List<?> rawList = (List<?>) payload.getOrDefault("array", Collections.emptyList());
+        List<Integer> list = new ArrayList<>();
+        for (Object item : rawList) {
+            if (item instanceof Number n) {
+                list.add(n.intValue());
+            }
+        }
+        int target = 0;
+        if (payload.get("target") instanceof Number n) {
+            target = n.intValue();
+        }
+        String algorithm = (String) payload.getOrDefault("algorithm", "binary");
+
+        Map<String, Object> response = new HashMap<>();
+        if ("linear".equalsIgnoreCase(algorithm)) {
+            SearchEngine.SearchResult<Integer> res = SearchEngine.linearSearch(list, target);
+            response.put("found", res.getIndex() >= 0);
+            response.put("index", res.getIndex());
+            response.put("comparisons", res.getComparisons());
+            response.put("durationNanos", res.getDurationNanos());
+            response.put("algorithm", "Linear Search");
+            response.put("theoreticalComplexity", "O(n)");
+            response.put("summary", String.format("Linear search scanned %d items to locate %d (Index: %d)", res.getComparisons(), target, res.getIndex()));
+        } else {
+            // Sort list for binary search if not already sorted
+            List<Integer> sorted = new ArrayList<>(list);
+            Collections.sort(sorted);
+            SearchEngine.SearchResult<Integer> res = SearchEngine.binarySearch(sorted, target);
+            response.put("found", res.getIndex() >= 0);
+            response.put("index", res.getIndex());
+            response.put("comparisons", res.getComparisons());
+            response.put("durationNanos", res.getDurationNanos());
+            response.put("sortedArray", sorted);
+            response.put("algorithm", "Binary Search");
+            response.put("theoreticalComplexity", "O(log n)");
+            response.put("summary", String.format("Binary search located target %d in %d logarithmic steps (Index: %d)", target, res.getComparisons(), res.getIndex()));
+        }
+        response.put("source", "Spring Boot (Java 21 SearchEngine)");
+        return response;
+    }
+
+    public Map<String, Object> executeCustomSort(Map<String, Object> payload) {
+        List<?> rawList = (List<?>) payload.getOrDefault("array", Collections.emptyList());
+        List<Integer> list = new ArrayList<>();
+        for (Object item : rawList) {
+            if (item instanceof Number n) {
+                list.add(n.intValue());
+            }
+        }
+        String algorithm = (String) payload.getOrDefault("algorithm", "merge");
+
+        Map<String, Object> response = new HashMap<>();
+        if ("bubble".equalsIgnoreCase(algorithm)) {
+            SortingEngine.SortResult<Integer> res = SortingEngine.bubbleSort(list, Integer::compareTo);
+            response.put("sortedArray", res.getSortedList());
+            response.put("comparisons", res.getComparisons());
+            response.put("swaps", res.getSwaps());
+            response.put("durationNanos", res.getDurationNanos());
+            response.put("algorithm", "Bubble Sort");
+            response.put("theoreticalComplexity", "O(n^2)");
+            response.put("summary", String.format("Bubble sort performed %d comparisons and %d swaps", res.getComparisons(), res.getSwaps()));
+        } else {
+            SortingEngine.SortResult<Integer> res = SortingEngine.mergeSort(list, Integer::compareTo);
+            response.put("sortedArray", res.getSortedList());
+            response.put("comparisons", res.getComparisons());
+            response.put("swaps", res.getSwaps());
+            response.put("durationNanos", res.getDurationNanos());
+            response.put("algorithm", "Merge Sort");
+            response.put("theoreticalComplexity", "O(n log n)");
+            response.put("summary", String.format("Merge sort performed %d comparisons and %d merge steps", res.getComparisons(), res.getSwaps()));
+        }
+        response.put("source", "Spring Boot (Java 21 SortingEngine)");
+        return response;
+    }
+
     private Map<String, Object> createConcept(String name, String javaEquivalent, String timeComplexity, String spaceComplexity, String useCase) {
         Map<String, Object> map = new HashMap<>();
         map.put("name", name);

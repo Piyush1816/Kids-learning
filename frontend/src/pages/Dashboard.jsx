@@ -12,19 +12,29 @@ import {
   CheckCircle2, 
   Play, 
   RotateCw,
-  BookOpen
+  BookOpen,
+  Compass
 } from 'lucide-react';
-import { INITIAL_CATEGORIES } from '../services/mockData';
+import { ALL_LESSONS } from '../services/mockData';
 
-export default function Dashboard({ setTab, stars, setStars, badgesCount }) {
+export default function Dashboard({ setTab, stars, setStars, badgesCount, onSelectCategory }) {
   const [profile, setProfile] = useState(api.getProfile());
   const [dailyQuest, setDailyQuest] = useState(api.getDailyChallenge());
   const [triggerConfetti, setTriggerConfetti] = useState(false);
   const [questCompleted, setQuestCompleted] = useState(false);
+  const [categories, setCategories] = useState(api.getCategoriesSync());
+  const [nextLesson, setNextLesson] = useState(null);
 
   useEffect(() => {
     setProfile(api.getProfile());
     setDailyQuest(api.getDailyChallenge());
+    const cats = api.getCategoriesSync();
+    setCategories(cats);
+
+    // Find next uncompleted lesson to recommend
+    const completed = JSON.parse(localStorage.getItem('ll_completed_lessons') || '[]');
+    const next = ALL_LESSONS.find((l) => !completed.includes(l.id)) || ALL_LESSONS[0];
+    setNextLesson(next);
   }, [stars]);
 
   const handleCompleteQuest = () => {
@@ -38,8 +48,24 @@ export default function Dashboard({ setTab, stars, setStars, badgesCount }) {
       setTriggerConfetti(false);
       setDailyQuest(api.getDailyChallenge());
       setQuestCompleted(false);
+      setCategories(api.getCategoriesSync());
     }, 1500);
   };
+
+  const handleCategoryClick = (catId) => {
+    sound.playPop();
+    if (onSelectCategory) {
+      onSelectCategory(catId);
+    } else {
+      setTab('learn');
+    }
+  };
+
+  const totalCurriculumLessons = categories.reduce((sum, c) => sum + (c.count || 0), 0);
+  const totalMasteredLessons = categories.reduce((sum, c) => sum + (c.completed || 0), 0);
+  const overallPercentage = totalCurriculumLessons > 0 
+    ? Math.round((totalMasteredLessons / totalCurriculumLessons) * 100) 
+    : 0;
 
   return (
     <div className="space-y-8 py-4">
@@ -50,13 +76,13 @@ export default function Dashboard({ setTab, stars, setStars, badgesCount }) {
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-2 text-center md:text-left">
             <span className="px-3 py-1 rounded-full bg-amber-200/80 text-amber-900 font-bold text-xs uppercase tracking-wide">
-              Level 2 Explorer
+              Level 2 Explorer • {totalMasteredLessons}/{totalCurriculumLessons} Lessons Mastered
             </span>
             <h1 className="font-display font-bold text-3xl sm:text-4xl text-slate-800">
               Good day, <span className="text-orange-500">{profile.name}!</span> 🌟
             </h1>
             <p className="text-slate-600 font-medium text-sm sm:text-base max-w-lg">
-              You are on a 4-day learning streak! Ready to discover exciting new things today?
+              You are exploring all 8 learning pathways! Over {totalCurriculumLessons} lessons with phonics, numbers, animals, and interactive tasks are ready for you.
             </p>
           </div>
 
@@ -69,6 +95,36 @@ export default function Dashboard({ setTab, stars, setStars, badgesCount }) {
           </div>
         </div>
       </section>
+
+      {/* Continue Learning Fast-Action Card */}
+      {nextLesson && (
+        <section className="card-soft p-5 sm:p-6 bg-gradient-to-r from-sky-50 via-indigo-50 to-amber-50 border-sky-200 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-4 text-center sm:text-left">
+            <span className="text-4xl sm:text-5xl p-2.5 rounded-3xl bg-white border border-sky-200 shadow-sm shrink-0">
+              {nextLesson.illustration || nextLesson.icon || '🚀'}
+            </span>
+            <div className="space-y-1">
+              <span className="text-[11px] font-bold text-indigo-700 uppercase tracking-wider flex items-center gap-1 justify-center sm:justify-start">
+                <Compass className="w-3.5 h-3.5" /> Continue Your Learning Pathway
+              </span>
+              <h3 className="font-display font-bold text-lg sm:text-xl text-slate-800">
+                Next Up: {nextLesson.title || nextLesson.name}
+              </h3>
+              <p className="text-xs text-slate-500 font-medium line-clamp-1">
+                {nextLesson.explanation || nextLesson.desc}
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => handleCategoryClick(nextLesson.categoryId || 'alphabets')}
+            className="btn-bubbly px-6 py-3 rounded-2xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-display font-bold text-xs sm:text-sm shadow-md flex items-center gap-2 shrink-0"
+          >
+            <Play className="w-4 h-4 fill-amber-950" />
+            <span>Continue Learning ➔</span>
+          </button>
+        </section>
+      )}
 
       {/* 4 Core Quick Stats */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -95,21 +151,21 @@ export default function Dashboard({ setTab, stars, setStars, badgesCount }) {
 
         <div className="card-soft p-5 bg-emerald-50/80 border-emerald-200 flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-emerald-400 text-white flex items-center justify-center shadow-md">
-            <Flame className="w-6 h-6 fill-white" />
+            <BookOpen className="w-6 h-6 fill-white" />
           </div>
           <div>
-            <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Daily Streak</p>
-            <p className="font-display font-extrabold text-2xl text-emerald-950">{profile.streakDays} Days</p>
+            <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Mastered Lessons</p>
+            <p className="font-display font-extrabold text-2xl text-emerald-950">{totalMasteredLessons} / {totalCurriculumLessons}</p>
           </div>
         </div>
 
         <div className="card-soft p-5 bg-sky-50/80 border-sky-200 flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-sky-400 text-white flex items-center justify-center shadow-md">
-            <Clock className="w-6 h-6" />
+            <Flame className="w-6 h-6 fill-white" />
           </div>
           <div>
-            <p className="text-xs font-bold text-sky-700 uppercase tracking-wider">Time Explored</p>
-            <p className="font-display font-extrabold text-2xl text-sky-950">{profile.timeSpentMinutes} mins</p>
+            <p className="text-xs font-bold text-sky-700 uppercase tracking-wider">Overall Progress</p>
+            <p className="font-display font-extrabold text-2xl text-sky-950">{overallPercentage}%</p>
           </div>
         </div>
 
@@ -145,7 +201,11 @@ export default function Dashboard({ setTab, stars, setStars, badgesCount }) {
             <button
               onClick={() => {
                 sound.playPop();
-                setTab(dailyQuest.category === 'alphabets' ? 'learn' : 'play');
+                if (dailyQuest.category) {
+                  handleCategoryClick(dailyQuest.category);
+                } else {
+                  setTab('learn');
+                }
               }}
               className="btn-bubbly px-5 py-3 rounded-2xl bg-white border-2 border-indigo-200 text-indigo-700 font-display font-bold text-sm shadow-sm hover:bg-indigo-50 flex items-center justify-center gap-2"
             >
@@ -168,47 +228,56 @@ export default function Dashboard({ setTab, stars, setStars, badgesCount }) {
       {/* Categories Progress Breakdown */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-display font-bold text-2xl text-slate-800">
-            Learning Pathways Progress
-          </h2>
+          <div>
+            <h2 className="font-display font-bold text-2xl text-slate-800">
+              Learning Pathways Progress
+            </h2>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
+              Click any category card to open its complete curriculum flashcards and activities.
+            </p>
+          </div>
           <button
             onClick={() => setTab('learn')}
             className="text-amber-600 hover:text-amber-700 font-bold text-sm flex items-center gap-1"
           >
-            <span>Explore All</span>
+            <span>Explore All Pathways</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {INITIAL_CATEGORIES.map((cat) => {
-            const pct = Math.round((cat.completed / cat.count) * 100);
+          {categories.map((cat) => {
+            const pct = cat.count > 0 ? Math.round((cat.completed / cat.count) * 100) : 0;
             return (
               <div 
                 key={cat.id} 
-                onClick={() => { sound.playPop(); setTab('learn'); }}
-                className="card-soft p-5 cursor-pointer hover:border-amber-300 group"
+                onClick={() => handleCategoryClick(cat.id)}
+                className="card-soft p-5 cursor-pointer hover:border-amber-400 hover:shadow-md transition-all group border-2 border-slate-200/80 bg-white"
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-3xl p-2 rounded-2xl bg-slate-50 group-hover:scale-110 transition-transform">
                     {cat.icon}
                   </span>
-                  <span className="text-xs font-bold text-slate-500">
+                  <span className="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
                     {cat.completed} / {cat.count}
                   </span>
                 </div>
                 <h3 className="font-display font-bold text-base text-slate-800 group-hover:text-amber-600 transition-colors">
                   {cat.name}
                 </h3>
+                <p className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">
+                  {cat.desc}
+                </p>
                 <div className="w-full bg-slate-100 rounded-full h-2.5 mt-3 overflow-hidden">
                   <div 
                     className="h-2.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-400 transition-all duration-500"
-                    style={{ width: `${Math.max(10, pct)}%` }}
+                    style={{ width: `${Math.max(8, pct)}%` }}
                   />
                 </div>
-                <span className="text-[11px] font-bold text-amber-600 mt-1.5 block text-right">
-                  {pct}% mastered
-                </span>
+                <div className="flex items-center justify-between text-[11px] font-bold text-amber-600 mt-1.5">
+                  <span>{pct}% mastered</span>
+                  <span className="text-slate-400 group-hover:translate-x-1 transition-transform">➔</span>
+                </div>
               </div>
             );
           })}

@@ -131,12 +131,12 @@ export default function QuizAdventure({ stars, setStars }) {
           >
             All Categories
           </button>
-          {INITIAL_CATEGORIES.slice(0, 5).map((c) => (
+          {INITIAL_CATEGORIES.map((c) => (
             <button
               key={c.id}
               onClick={() => { sound.playPop(); setSelectedCategory(c.id); }}
               className={`px-3 py-1.5 rounded-xl font-bold text-xs whitespace-nowrap transition-colors ${
-                selectedCategory === c.id ? 'bg-amber-400 text-amber-950 font-extrabold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                selectedCategory === c.id ? 'bg-amber-400 text-amber-950 font-extrabold shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               {c.icon} {c.name}
@@ -253,6 +253,29 @@ export default function QuizAdventure({ stars, setStars }) {
             </div>
           )}
 
+        </div>
+      )}
+
+      {/* EMPTY FILTER FALLBACK */}
+      {!quizFinished && questions.length === 0 && (
+        <div className="card-soft p-8 bg-white border-2 border-amber-200 text-center space-y-4 max-w-md mx-auto">
+          <span className="text-5xl block animate-bounce-gentle">🔍</span>
+          <h3 className="font-display font-bold text-xl text-slate-800">
+            No questions found for this filter
+          </h3>
+          <p className="text-xs text-slate-500 font-medium">
+            Try switching back to All Categories or choose Easy difficulty to find fun questions!
+          </p>
+          <button
+            onClick={() => {
+              sound.playPop();
+              setSelectedCategory('all');
+              setSelectedDifficulty('Easy');
+            }}
+            className="btn-bubbly px-6 py-2.5 rounded-2xl bg-amber-400 font-display font-bold text-xs text-amber-950"
+          >
+            Reset Filters
+          </button>
         </div>
       )}
 

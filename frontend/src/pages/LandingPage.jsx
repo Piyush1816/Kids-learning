@@ -4,10 +4,19 @@ import { sound } from '../services/audioService';
 import { Sparkles, Play, BookOpen, ArrowRight, Star, Heart, CheckCircle2 } from 'lucide-react';
 import { INITIAL_CATEGORIES } from '../services/mockData';
 
-export default function LandingPage({ setTab }) {
+export default function LandingPage({ setTab, onSelectCategory }) {
   const handleStart = () => {
     sound.playSuccess();
     setTab('dashboard');
+  };
+
+  const handleCategoryClick = (catId) => {
+    sound.playPop();
+    if (onSelectCategory) {
+      onSelectCategory(catId);
+    } else {
+      setTab('learn');
+    }
   };
 
   const handleGames = () => {
@@ -107,10 +116,7 @@ export default function LandingPage({ setTab }) {
           {INITIAL_CATEGORIES.map((cat) => (
             <div
               key={cat.id}
-              onClick={() => {
-                sound.playPop();
-                setTab('learn');
-              }}
+              onClick={() => handleCategoryClick(cat.id)}
               className="card-soft p-5 cursor-pointer hover:-translate-y-1 group border-2 hover:border-amber-300"
             >
               <div className="flex items-start justify-between mb-3">

@@ -14,14 +14,16 @@ import {
 } from 'lucide-react';
 import { INITIAL_CATEGORIES } from '../services/mockData';
 
-export default function ParentCorner({ stars }) {
+export default function ParentCorner({ stars, onSelectCategory }) {
   const [profile, setProfile] = useState(api.getProfile());
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState(false);
+  const [categories, setCategories] = useState(api.getCategoriesSync());
 
   useEffect(() => {
     setProfile(api.getProfile());
+    setCategories(api.getCategoriesSync());
   }, [stars]);
 
   const handleVerifyGate = (e) => {
@@ -170,23 +172,33 @@ export default function ParentCorner({ stars }) {
             </div>
 
             <div className="space-y-4">
-              {INITIAL_CATEGORIES.map((cat) => {
-                const pct = Math.round((cat.completed / cat.count) * 100);
+              {categories.map((cat) => {
+                const pct = cat.count > 0 ? Math.round((cat.completed / cat.count) * 100) : 0;
                 return (
-                  <div key={cat.id} className="space-y-1.5">
+                  <div 
+                    key={cat.id} 
+                    onClick={() => {
+                      if (onSelectCategory) {
+                        sound.playPop();
+                        onSelectCategory(cat.id);
+                      }
+                    }}
+                    className="space-y-1.5 p-2 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group"
+                    title={`Click to open ${cat.name} pathway`}
+                  >
                     <div className="flex items-center justify-between text-xs font-bold">
-                      <span className="flex items-center gap-2 text-slate-700">
+                      <span className="flex items-center gap-2 text-slate-700 group-hover:text-indigo-600 transition-colors">
                         <span>{cat.icon}</span>
                         <span>{cat.name}</span>
                       </span>
-                      <span className="text-slate-500">
+                      <span className="text-slate-500 font-mono">
                         {cat.completed} of {cat.count} completed ({pct}%)
                       </span>
                     </div>
                     <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
                       <div 
                         className="h-full rounded-full bg-gradient-to-r from-amber-400 to-indigo-500 transition-all duration-500"
-                        style={{ width: `${Math.max(12, pct)}%` }}
+                        style={{ width: `${Math.max(6, pct)}%` }}
                       />
                     </div>
                   </div>
