@@ -1,99 +1,79 @@
 # 🦊 Little Learners — Explore, Play & Grow
-### An Interactive Kids Learning Platform & College DSA Project in Java
+### Interactive Kids Learning & Educational DSA Platform in React
 
-Welcome to **Little Learners**, an educational web platform designed for children aged 4–10 and engineered as a comprehensive college project for **Data Structures and Algorithms (DSA) in Java**.
+Welcome to **Little Learners**, a vibrant educational web application designed for children aged 4–10 and expanded with an interactive **Data Structures and Algorithms (DSA) Laboratory** for computer science learning and demonstration.
 
 ---
 
-## 📁 Project Architecture & Directory Structure
+## 🚀 Overview
 
+The application has been rewritten from the original Android wrapper into a standalone, modern **React + Vite** single-page application (SPA) with **Tailwind CSS**. It preserves all original features, 8-category curricula (175 interactive lessons), 6 educational mini-games, an adaptive quiz engine, drawing studio with undo/redo stack, parental dashboard, and interactive DSA visualizers with real-time algorithm benchmarks.
+
+---
+
+## 🌟 Key Features
+
+1. **Explore & Learn (8 Interactive Curricula - 175 Lessons)**
+   - **Alphabets (A-Z)**: Phonics, letter tracing, spoken pronunciation, fun facts, and micro-activities.
+   - **Numbers (0-100 & Math)**: Interactive digital abacus, pattern counting, and arithmetic.
+   - **Rainbow Studio (Colors)**: Color mixing laboratory (e.g., Red + Yellow = Orange).
+   - **Shape Explorer**: 2D & 3D geometric shapes with real-world recognition.
+   - **Wild Safari (Animals & Birds)**: Animal sounds, habitats, and trivia.
+   - **Garden Market (Fruits & Veggies)**: Nutritional benefits and healthy eating habits.
+   - **Motion World (Vehicles)**: Land, water, and air transportation.
+   - **Human Body**: Anatomy, senses, and personal wellness.
+
+2. **Play Zone (6 Interactive Mini-Games)**
+   - Animal Sound Matcher
+   - Memory Matrix Card Flip
+   - Mystery Shadow Silhouette Guesser
+   - Healthy Food & Item Category Sorter
+   - Bubble Pop Math Challenger
+   - Color Pattern Memory Sequence
+
+3. **Quiz Adventure**
+   - Filter by curriculum category and difficulty (Easy, Medium, Challenge).
+   - Instant auditory and visual feedback, streak tracking, star rewards, and answer explanations.
+
+4. **Creative Corner (Drawing Studio)**
+   - Full HTML5 Canvas drawing board with color palette, brush sizes, and eraser.
+   - LIFO **Stack-based Undo/Redo engine** demonstrating stack data structures.
+   - Download finished art directly as an image.
+
+5. **Parent & Educator Corner**
+   - Private parental gate challenge (arithmetic challenge or PIN).
+   - Progress analytics, lesson completion rates, time spent, and educator recommendations.
+
+6. **DSA Visualizer Lab & College Viva Defense**
+   - **Dynamic ArrayList Visualizer**: Watch capacity double with contiguous memory buffer visualization.
+   - **Chained HashMap Visualizer**: Separate chaining collision handling with bucket visualization.
+   - **FIFO Challenge Queue**: Enqueue and dequeue daily quests in First-In, First-Out order.
+   - **Activity Stack**: Push and pop canvas stroke states with LIFO demonstration.
+   - **Search & Sort Benchmarking Engine**: Side-by-side performance comparisons ($O(n)$ Linear vs $O(\log n)$ Binary Search, and $O(n^2)$ Bubble Sort vs $O(n \log n)$ Merge Sort).
+   - **College Viva Cheat Sheet**: Curated answers for examiners on algorithm tradeoffs and complexities.
+
+---
+
+## 🛠️ Tech Stack & Architecture
+
+- **Framework**: React 18 (Functional Components, Hooks)
+- **Bundler & Dev Server**: Vite 6 (`--host 0.0.0.0 --port 3000`)
+- **Styling**: Tailwind CSS with custom pastel/brand design tokens and full Dark Mode support
+- **Audio & Speech**: Web Audio API synthesis for celebratory chimes and native `SpeechSynthesis` for phonics
+- **Icons**: Lucide React
+- **Storage**: Browser LocalStorage for persistent stars, badges, progress, and activity history
+
+---
+
+## 💻 Development & Build
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server on port 3000
+npm run dev
+
+# Build production bundle
+npm run build
 ```
-├── backend/                              # Spring Boot 3 & Java 21 REST API
-│   ├── pom.xml                           # Maven dependencies (Spring Web, Validation, JUnit 5)
-│   ├── src/
-│   │   ├── main/java/com/littlelearners/
-│   │   │   ├── LittleLearnersApplication.java # Spring Boot Main
-│   │   │   ├── config/CorsConfig.java    # Permissive CORS configuration
-│   │   │   ├── controller/               # REST API Endpoints
-│   │   │   │   ├── LessonController.java # /api/health, /api/categories, /api/lessons
-│   │   │   │   ├── QuizController.java   # /api/quizzes, /api/quizzes/submit
-│   │   │   │   ├── GameController.java   # /api/games
-│   │   │   │   ├── ProgressController.java # /api/challenges, /api/history
-│   │   │   │   ├── RewardController.java # /api/rewards, /api/leaderboard
-│   │   │   │   └── DsaVisualizerController.java # /api/dsa/concepts, benchmarks, search, sort
-│   │   │   ├── dsa/                      # Custom Core DSA Implementations
-│   │   │   │   ├── CustomArrayList.java  # Resizable dynamic array (1.5x growth)
-│   │   │   │   ├── CustomHashMap.java    # Chained hash table for O(1) lookups
-│   │   │   │   ├── ChallengeQueue.java   # FIFO Queue for daily challenge quests
-│   │   │   │   ├── ActivityStack.java    # LIFO Stack for undo/redo & history
-│   │   │   │   ├── SearchEngine.java     # Linear O(n) & Binary Search O(log n)
-│   │   │   │   └── SortingEngine.java    # Merge Sort O(n log n) & Bubble Sort
-│   │   │   ├── model/                    # Domain entities (Lesson, Category, Quiz...)
-│   │   │   └── service/                  # Business logic services
-│   │   └── test/java/com/littlelearners/ # JUnit 5 Unit Tests
-│   └── README.md
-│
-├── frontend/                             # React 18, Vite & Tailwind CSS Client
-│   ├── package.json
-│   ├── vite.config.js                    # Dev server & reverse proxy configuration
-│   ├── tailwind.config.js                # Pastel & child-friendly design tokens
-│   ├── src/
-│   │   ├── components/                   # Navbar, Lumi mascot SVG, Confetti
-│   │   ├── pages/
-│   │   │   ├── LandingPage.jsx           # Hero banner with Lumi mascot
-│   │   │   ├── Dashboard.jsx             # Home dashboard & daily challenge queue
-│   │   │   ├── ExploreLearn.jsx          # 8 rich interactive learning modules
-│   │   │   ├── PlayZone.jsx              # 6 interactive educational mini-games
-│   │   │   ├── QuizAdventure.jsx         # Adaptive multiple-choice quiz engine
-│   │   │   ├── RewardsRoom.jsx           # Badges, star vault & leaderboard
-│   │   │   ├── CreativeCorner.jsx        # Drawing canvas with Stack Undo/Redo
-│   │   │   ├── ParentCorner.jsx          # Analytics & parental verification gate
-│   │   │   ├── Settings.jsx              # Sound, theme & accessibility options
-│   │   │   └── DsaLab.jsx                # Interactive DSA visualizer & Viva defense
-│   │   └── services/
-│   │       ├── api.js                    # Auto-detecting REST client & fallback
-│   │       ├── audioService.js           # Web Audio & SpeechSynthesis phonics
-│   │       └── mockData.js               # Rich offline curricula dataset
-│   └── README.md
-```
-
----
-
-## ⚡ How to Run Both Applications Locally
-
-### Step 1: Run the Java Spring Boot Backend
-1. Open a terminal in the `backend/` directory:
-   ```bash
-   cd backend
-   mvn spring-boot:run
-   ```
-2. The Spring Boot backend starts at: **`http://localhost:8081`** (API endpoints under **`/api`**, e.g., `/api/health`, `/api/categories`, `/api/dsa/concepts`).
-3. To run all automated DSA unit tests:
-   ```bash
-   cd backend
-   mvn test
-   ```
-
-### Step 2: Run the React Frontend Client
-1. Open a second terminal in the `frontend/` directory:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-2. Open your browser at: **`http://localhost:3000`** (or Vite's default dev port).
-3. The frontend Vite server automatically proxies `/api/*` requests to the Spring Boot backend (`http://localhost:8081`), and the top navbar displays: **`● Spring Boot: Live`**!
-4. When running standalone without the backend, the app falls back seamlessly to the client offline demo engine, showing **`● Demo Mode`**.
-
----
-
-## 🎓 College Viva & DSA Mapping Guide
-
-| Feature in Little Learners | DSA Concept | Java Class | Time Complexity | Why it was chosen |
-|---|---|---|---|---|
-| Lessons & Category Catalog | Dynamic Resizable Array | `CustomArrayList.java` | $O(1)$ read, $O(1)$ amortized insert | Contiguous memory array gives instant random access by index for flipping cards. |
-| Category & Quiz Grading | Hash Table (Separate Chaining) | `CustomHashMap.java` | $O(1)$ average get/put | Instant retrieval of correct answers and category metadata regardless of dataset size. |
-| Daily Quest Sequence | First-In, First-Out (FIFO) Queue | `ChallengeQueue.java` | $O(1)$ enqueue, dequeue, peek | Ensures quests are completed in orderly sequence; completed tasks cycle to the tail. |
-| Drawing Canvas Undo/Redo | Last-In, First-Out (LIFO) Stack | `ActivityStack.java` | $O(1)$ push, pop, peek | The most recent stroke drawn is the first to be undone, naturally modeling a stack. |
-| Lesson ID Search | Binary Search vs Linear Search | `SearchEngine.java` | $O(\log n)$ vs $O(n)$ | Halves search space on sorted lesson keys in logarithmic steps. |
-| Student Leaderboard | Merge Sort | `SortingEngine.java` | $O(n \log n)$ guaranteed | Stable divide-and-conquer algorithm that sorts scores consistently without degradation. |
